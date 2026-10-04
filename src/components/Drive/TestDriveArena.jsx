@@ -415,6 +415,9 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
   const nearReturnToKyivRef = useRef(nearReturnToKyiv);
   nearReturnToKyivRef.current = nearReturnToKyiv;
 
+  const [dpsDistance, setDpsDistance] = useState(null);
+  const [showDpsGuide, setShowDpsGuide] = useState(false);
+
   const frontlineEnemiesRef = useRef(null);
   const frontlineTriggersRef = useRef(null);
   const moscowTriggersRef = useRef(null);
@@ -1723,6 +1726,7 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
 
         const distDps = Math.hypot(currentPos.x - mt.dpsPost.x, currentPos.z - mt.dpsPost.z);
         setNearDpsPost(distDps < mt.dpsPost.radius);
+        setDpsDistance(Math.round(distDps));
 
         const distDpsCar = Math.hypot(currentPos.x - mt.dpsCar.x, currentPos.z - mt.dpsCar.z);
         setNearDpsCar(distDpsCar < mt.dpsCar.radius);
@@ -1731,6 +1735,7 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
         setNearReturnToKyiv(false);
         setNearDpsPost(false);
         setNearDpsCar(false);
+        setDpsDistance(null);
       }
 
       const airEvents = airDefenseRef.current?.update(dt, keysRef.current, currentPos);
@@ -2934,6 +2939,37 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
     setTimeout(() => setCrashBanner(null), 3000);
   };
 
+  // Quick navigation or teleport to DPS Post (Відділ ДПС у Москві)
+  const handleGoToDps = (teleport = true) => {
+    playClickSound();
+    if (selectedCity !== 'moscow') {
+      handleSelectCity('moscow');
+    }
+    setCustomRoute([{ x: 35, z: 35, name: '🚨 Відділ ДПС' }]);
+    if (teleport) {
+      setTimeout(() => {
+        if (isHumanOnFootRef.current && humanRef.current) {
+          humanRef.current.spawn(35, 26, 0);
+        } else if (physicsRef.current) {
+          physicsRef.current.resetPosition(35, 18, 0);
+        }
+        setCrashBanner({
+          name: '🚨 ВИ ПРИБУЛИ ДО ВІДДІЛУ ДПС! Натисніть [F] або підійдіть до посту, щоб влаштуватися на службу!',
+          force: 0,
+          isFsd: true
+        });
+        setTimeout(() => setCrashBanner(null), 5000);
+      }, 150);
+    } else {
+      setCrashBanner({
+        name: '📍 Маршрут до Відділу ДПС прокладено в навігаторі! Рухайтесь за високим синім маяком у небі!',
+        force: 0,
+        isFsd: true
+      });
+      setTimeout(() => setCrashBanner(null), 4000);
+    }
+  };
+
   // Police / DPS Siren toggle (Key G: Siren & Strobes)
   const handleToggleSiren = () => {
     if (!isDrivingPoliceCarRef.current && !isDrivingDpsCarRef.current) return;
@@ -3269,6 +3305,83 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
           dpsEarnings={dpsEarnings}
           onEquipDpsWand={handleEquipDpsWand}
         />
+      )}
+
+      {/* DPS Locator & Navigation Guide Modal */}
+      {showDpsGuide && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div className="relative w-full max-w-lg bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-blue-500 rounded-3xl shadow-[0_0_50px_rgba(37,99,235,0.6)] p-6 text-white font-sans flex flex-col gap-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl animate-bounce">🚨</span>
+                <div>
+                  <h2 className="text-lg font-black tracking-wide text-blue-300">
+                    ДЕ ЗНАХОДИТЬСЯ ВІДДІЛ ДПС?
+                  </h2>
+                  <p className="text-xs text-slate-400 font-mono">
+                    Дорожньо-патрульна служба • Інспекція, штрафи та службове авто
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowDpsGuide(false)}
+                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 hover:text-white transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs leading-relaxed text-slate-200">
+              <div className="p-3 bg-blue-950/60 border border-blue-500/40 rounded-2xl flex items-start gap-2.5">
+                <span className="text-2xl">📍</span>
+                <div>
+                  <strong className="text-white block text-sm">Локація: Москва (Координати X: 35, Z: 35)</strong>
+                  <span>
+                    Відділ ДПС розташований на схід від Красної площі поруч із Садовим кільцем.
+                    Над будівлею світить <strong>величезний 30-метровий маяк</strong> з синьо-червоними проблисковими вогнями, вертикальним світловим променем у небо та жовтою стрілкою!
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-3 bg-amber-950/40 border border-amber-500/30 rounded-2xl flex items-start gap-2.5">
+                <span className="text-2xl">⚠️</span>
+                <div>
+                  <strong className="text-amber-300 block text-sm">Зверніть увагу:</strong>
+                  <span>
+                    В українських містах (Київ, Вінниця, Запоріжжя) діє <strong>Патрульна поліція України 👮‍♂️</strong>.
+                    Служба в <strong>ДПС</strong> доступна тільки у <strong>Москві</strong>!
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-3 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-1.5 font-mono text-[11px]">
+                <div className="font-bold text-cyan-400 uppercase">Швидкі способи потрапити туди:</div>
+                <div className="text-slate-300">1. Натисніть кнопку <strong>«ТЕЛЕПОРТ У ВІДДІЛ ДПС»</strong> прямо зараз (перемістить негайно).</div>
+                <div className="text-slate-300">2. Або оберіть місто <strong>[🇷🇺 Москва]</strong> у верхньому селекторі міст.</div>
+                <div className="text-slate-300">3. Або прорвіться з передової <strong>«Фронт»</strong> (для бійців ЗСУ) по трасі до кордону [F].</div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-800">
+              <button
+                onClick={() => setShowDpsGuide(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition-all cursor-pointer"
+              >
+                Закрити
+              </button>
+              <button
+                onClick={() => {
+                  setShowDpsGuide(false);
+                  handleGoToDps(true);
+                }}
+                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-400 text-white font-black text-xs rounded-xl shadow-lg shadow-blue-500/40 transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <span>⚡</span>
+                <span>ТЕЛЕПОРТ У ВІДДІЛ ДПС</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Multiplayer Lobby & Server Connection Modal */}
@@ -3661,6 +3774,38 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
         </div>
       )}
 
+      {/* Moscow DPS Compass & Quick Action Widget */}
+      {selectedCity === 'moscow' && !activeDpsModal && (
+        <div className="absolute top-20 right-4 z-20 flex items-center gap-2.5 bg-slate-950/90 border border-blue-500/80 p-2.5 rounded-2xl shadow-[0_0_25px_rgba(37,99,235,0.4)] text-xs font-mono text-white backdrop-blur-md">
+          <span className="text-2xl animate-pulse">🚨</span>
+          <div className="flex flex-col">
+            <span className="font-black text-blue-300 text-[11px] uppercase tracking-wide">
+              ВІДДІЛ ДПС (X: 35, Z: 35)
+            </span>
+            <span className="text-[10px] text-slate-300">
+              Дистанція: <strong className="text-yellow-400 font-bold">{dpsDistance !== null ? `${dpsDistance}м` : '35м'}</strong> (Садове кільце)
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 ml-1">
+            <button
+              onClick={() => handleGoToDps(false)}
+              className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/40 rounded-lg text-[10px] font-bold transition-all cursor-pointer"
+              title="Прокласти маршрут в GPS навігаторі"
+            >
+              📍 Маршрут
+            </button>
+            <button
+              onClick={() => handleGoToDps(true)}
+              className="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-[10px] shadow-md transition-all flex items-center gap-1 cursor-pointer"
+              title="Миттєвий перехід прямо до дверей відділу ДПС"
+            >
+              <span>⚡</span>
+              <span>Телепорт</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Near Moscow Gateway Banner on Frontline */}
       {selectedCity === 'frontline' && nearGateToMoscow && (
         <div
@@ -3847,6 +3992,27 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
             >
               <span>🇷🇺</span>
               <span>Москва</span>
+            </button>
+
+            {/* Quick DPS Finder Button */}
+            <button
+              onClick={() => {
+                if (selectedCity === 'moscow') {
+                  handleGoToDps(true);
+                } else {
+                  setShowDpsGuide(true);
+                }
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600/90 hover:bg-blue-500 text-white font-black shadow-md shadow-blue-500/30 border border-blue-400/80 transition-all cursor-pointer"
+              title="Знайти Відділ ДПС: точні координати, маршрут або швидкий перехід"
+            >
+              <span className="animate-pulse">🚨</span>
+              <span>ВІДДІЛ ДПС</span>
+              {selectedCity === 'moscow' && dpsDistance !== null && (
+                <span className="bg-blue-950 text-blue-200 px-1.5 py-0.2 rounded text-[10px] font-mono border border-blue-400/40">
+                  {dpsDistance}м
+                </span>
+              )}
             </button>
           </div>
 

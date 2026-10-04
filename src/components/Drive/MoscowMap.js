@@ -239,13 +239,69 @@ export function buildMoscowCity(scene) {
   dpsBuilding.castShadow = true;
   dpsGroup.add(dpsBuilding);
 
-  // DPS Signboard ("ПОСТ ДПС • ДОРОЖНО-ПАТРУЛЬНАЯ СЛУЖБА")
+  // DPS Signboard ("🚨 ВІДДІЛ ДПС • ДОРОЖНЬО-ПАТРУЛЬНА СЛУЖБА 🚨")
   const signMesh = new THREE.Mesh(
-    new THREE.BoxGeometry(15, 1.8, 0.2),
-    new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.3 })
+    new THREE.BoxGeometry(16, 2.4, 0.3),
+    new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.2, emissive: 0x1e40af, emissiveIntensity: 0.6 })
   );
-  signMesh.position.set(0, 5.2, 7.15);
+  signMesh.position.set(0, 5.5, 7.2);
   dpsGroup.add(signMesh);
+
+  // Giant 3D Light Beacon Tower (Високий маяк, який видно з будь-якої точки карти)
+  const beaconPole = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.4, 0.5, 26, 12),
+    new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.2 })
+  );
+  beaconPole.position.set(0, 16, 0);
+  dpsGroup.add(beaconPole);
+
+  // Glowing Police Blue & Red Rings on Beacon
+  const blueBeaconRing = new THREE.Mesh(
+    new THREE.TorusGeometry(2.2, 0.4, 8, 24),
+    new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+  );
+  blueBeaconRing.position.set(0, 24, 0);
+  blueBeaconRing.rotation.x = Math.PI / 2;
+  dpsGroup.add(blueBeaconRing);
+
+  const redBeaconRing = new THREE.Mesh(
+    new THREE.TorusGeometry(2.0, 0.4, 8, 24),
+    new THREE.MeshBasicMaterial({ color: 0xef4444 })
+  );
+  redBeaconRing.position.set(0, 26, 0);
+  redBeaconRing.rotation.x = Math.PI / 2;
+  dpsGroup.add(redBeaconRing);
+
+  // Vertical Light Beam pointing straight up into the sky
+  const skyBeam = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.2, 3.5, 90, 16, 1, true),
+    new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.45,
+      side: THREE.DoubleSide
+    })
+  );
+  skyBeam.position.set(0, 52, 0);
+  dpsGroup.add(skyBeam);
+
+  // Big 3D Glowing Pointer Arrow pointing DOWN at the entrance
+  const arrowCone = new THREE.Mesh(
+    new THREE.ConeGeometry(2.2, 4.0, 8),
+    new THREE.MeshBasicMaterial({ color: 0xfacc15 })
+  );
+  arrowCone.rotation.x = Math.PI; // point downwards
+  arrowCone.position.set(0, 11, 7.5);
+  dpsGroup.add(arrowCone);
+
+  // Strobe Lights on Beacon
+  const blueStrobe = new THREE.PointLight(0x0284c7, 4.0, 50);
+  blueStrobe.position.set(0, 24, 0);
+  dpsGroup.add(blueStrobe);
+
+  const redStrobe = new THREE.PointLight(0xdc2626, 4.0, 50);
+  redStrobe.position.set(0, 26, 0);
+  dpsGroup.add(redStrobe);
 
   // Glass observation booth (Стакан ДПС)
   const booth = new THREE.Mesh(
@@ -359,8 +415,8 @@ export function buildMoscowCity(scene) {
   return {
     colliders,
     // Interactive trigger coordinates
-    dpsPost: { x: 35, z: 35, radius: 9.0 },
-    dpsCar: { x: 35, z: 23, radius: 6.0 },
-    returnToKyiv: { x: -65, z: -98, radius: 12.0 }
+    dpsPost: { x: 35, z: 35, radius: 24.0 },
+    dpsCar: { x: 35, z: 23, radius: 12.0 },
+    returnToKyiv: { x: -65, z: -98, radius: 18.0 }
   };
 }
