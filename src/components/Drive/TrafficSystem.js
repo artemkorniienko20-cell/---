@@ -171,6 +171,45 @@ export class TrafficSystem {
           { x: -3.5, z: 140 }
         ]
       ];
+    } else if (cityId === 'tokmak') {
+      this.routes = [
+        // 1. Eastbound P37 highway across Tokmachka bridge (Lane Z: -3.5)
+        [
+          { x: -280, z: -3.5 },
+          { x: -140, z: -3.5 },
+          { x: -60, z: -3.5 },
+          { x: 0, z: -3.5 },
+          { x: 60, z: -3.5 },
+          { x: 200, z: -3.5 },
+          { x: 280, z: -3.5 }
+        ],
+        // 2. Westbound P37 highway (Lane Z: 3.5)
+        [
+          { x: 280, z: 3.5 },
+          { x: 200, z: 3.5 },
+          { x: 60, z: 3.5 },
+          { x: 0, z: 3.5 },
+          { x: -60, z: 3.5 },
+          { x: -140, z: 3.5 },
+          { x: -280, z: 3.5 }
+        ],
+        // 3. Central Street North-South (Lane X: 63.5)
+        [
+          { x: 63.5, z: -250 },
+          { x: 63.5, z: -100 },
+          { x: 63.5, z: 0 },
+          { x: 63.5, z: 100 },
+          { x: 63.5, z: 250 }
+        ],
+        // 4. Central Street South-North (Lane X: 56.5)
+        [
+          { x: 56.5, z: 250 },
+          { x: 56.5, z: 100 },
+          { x: 56.5, z: 0 },
+          { x: 56.5, z: -100 },
+          { x: 56.5, z: -250 }
+        ]
+      ];
     } else {
       // Vinnytsia Traffic Routes
       this.routes = [

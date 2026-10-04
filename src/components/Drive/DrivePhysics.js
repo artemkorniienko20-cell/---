@@ -270,6 +270,38 @@ export const MOSCOW_PRESET_ROUTES = [
   }
 ];
 
+/**
+ * Tokmak Landmarks & Routes (Місто Токмак • Запорізька область)
+ */
+export const TOKMAK_LANDMARKS = [
+  { id: 'stela_tokmak', x: -180, z: 16, name: 'В\'їзна стела «ТОКМАК»', desc: 'Монументальний в\'їзд у місто з українським прапором' },
+  { id: 'bridge_tokmachka', x: -60, z: 0, name: 'Міст через р. Токмачка', desc: 'Автомобільний міст над степовою річкою' },
+  { id: 'city_hall_tokmak', x: 60, z: 60, name: 'Центральна площа & Мерія', desc: 'Адміністративний центр міста Токмак' },
+  { id: 'station_tokmak', x: 140, z: -120, name: 'Вокзал «Великий Токмак»', desc: 'Залізничний вокзал, перон та потяги' },
+  { id: 'diesel_factory', x: -140, z: -150, name: 'Токмацький Дизельмаш', desc: 'Машинобудівний завод «Південдизельмаш»' },
+  { id: 'grain_elevator', x: 160, z: 120, name: 'Токмацький Елеватор', desc: 'Зерновий комплекс з високими силосами' },
+  { id: 'solar_farm', x: -150, z: 130, name: 'СЕС «Tokmak Solar Energy»', desc: 'Сонячна електростанція півдня України' }
+];
+
+export const DEFAULT_TOKMAK_ROUTE = [
+  { x: -180, z: 0, name: 'В\'їзна стела Токмак' },
+  { x: -60, z: 0, name: 'Міст через р. Токмачка' },
+  { x: 0, z: 0, name: 'Головна траса Р37' },
+  { x: 60, z: 0, name: 'Перехрестя Шевченка' },
+  { x: 60, z: 60, name: 'Міська рада Токмака' },
+  { x: 140, z: -100, name: 'Вокзал Великий Токмак' },
+  { x: 160, z: 120, name: 'Токмацький Елеватор' },
+  { x: 0, z: 0, name: 'Фініш: Траса' }
+];
+
+export const TOKMAK_PRESET_ROUTES = [
+  {
+    id: 'tokmak_tour',
+    name: '🌻 Степовий експрес: Вокзал • Дизельмаш • СЕС Токмак',
+    waypoints: DEFAULT_TOKMAK_ROUTE
+  }
+];
+
 
 /**
  * Vehicle dynamics, collision crash & destruction physics simulation

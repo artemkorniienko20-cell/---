@@ -17,10 +17,14 @@ import {
   FRONTLINE_PRESET_ROUTES,
   MOSCOW_LANDMARKS,
   DEFAULT_MOSCOW_ROUTE,
-  MOSCOW_PRESET_ROUTES
+  MOSCOW_PRESET_ROUTES,
+  TOKMAK_LANDMARKS,
+  DEFAULT_TOKMAK_ROUTE,
+  TOKMAK_PRESET_ROUTES
 } from './DrivePhysics';
 import { buildVinnytsiaCity } from './VinnytsiaMap';
 import { buildZaporizhzhiaCity } from './ZaporizhzhiaMap';
+import { buildTokmakCity } from './TokmakMap';
 import { buildKyivCity } from './KyivMap';
 import { buildFrontlineMap } from './FrontlineMap';
 import { FrontlineEnemies } from './FrontlineEnemies';
@@ -620,6 +624,12 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
       if (physicsRef.current) {
         physicsRef.current.resetPosition(120, -100, Math.PI);
         physicsRef.current.setRoute(DEFAULT_ZAPORIZHZHIA_ROUTE);
+      }
+    } else if (selectedCity === 'tokmak') {
+      collidersRef.current = buildTokmakCity(cityGroup);
+      if (physicsRef.current) {
+        physicsRef.current.resetPosition(-180, 0, 0);
+        physicsRef.current.setRoute(DEFAULT_TOKMAK_ROUTE);
       }
     } else {
       collidersRef.current = buildVinnytsiaCity(cityGroup);
@@ -2457,6 +2467,16 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
           force: 0,
           isFsd: true
         });
+      } else if (cityId === 'tokmak') {
+        collidersRef.current = buildTokmakCity(cityGroup);
+        physicsRef.current.resetPosition(-180, 0, 0);
+        physicsRef.current.setRoute(DEFAULT_TOKMAK_ROUTE);
+        setCustomRoute(DEFAULT_TOKMAK_ROUTE);
+        setCrashBanner({
+          name: '🌻 ВІТАЄМО В ТОКМАКУ! (СТЕЛА • РІЧКА ТОКМАЧКА • ВОКЗАЛ • ДИЗЕЛЬМАШ • СЕС ТОКМАК)',
+          force: 0,
+          isFsd: true
+        });
       } else {
         collidersRef.current = buildVinnytsiaCity(cityGroup);
         physicsRef.current.resetPosition(0, -5, 0);
@@ -3311,82 +3331,7 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
         />
       )}
 
-      {/* DPS Locator & Navigation Guide Modal */}
-      {showDpsGuide && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-          <div className="relative w-full max-w-lg bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-blue-500 rounded-3xl shadow-[0_0_50px_rgba(37,99,235,0.6)] p-6 text-white font-sans flex flex-col gap-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-3">
-                <span className="text-3xl animate-bounce">🚨</span>
-                <div>
-                  <h2 className="text-lg font-black tracking-wide text-blue-300">
-                    ДЕ ЗНАХОДИТЬСЯ ВІДДІЛ ДПС?
-                  </h2>
-                  <p className="text-xs text-slate-400 font-mono">
-                    Дорожньо-патрульна служба • Інспекція, штрафи та службове авто
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowDpsGuide(false)}
-                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 hover:text-white transition-colors cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
 
-            <div className="space-y-3 text-xs leading-relaxed text-slate-200">
-              <div className="p-3 bg-blue-950/60 border border-blue-500/40 rounded-2xl flex items-start gap-2.5">
-                <span className="text-2xl">📍</span>
-                <div>
-                  <strong className="text-white block text-sm">Локація: Москва (Координати X: 35, Z: 35)</strong>
-                  <span>
-                    Відділ ДПС розташований на схід від Красної площі поруч із Садовим кільцем.
-                    Над будівлею світить <strong>величезний 30-метровий маяк</strong> з синьо-червоними проблисковими вогнями, вертикальним світловим променем у небо та жовтою стрілкою!
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-3 bg-amber-950/40 border border-amber-500/30 rounded-2xl flex items-start gap-2.5">
-                <span className="text-2xl">⚠️</span>
-                <div>
-                  <strong className="text-amber-300 block text-sm">Зверніть увагу:</strong>
-                  <span>
-                    В українських містах (Київ, Вінниця, Запоріжжя) діє <strong>Патрульна поліція України 👮‍♂️</strong>.
-                    Служба в <strong>ДПС</strong> доступна тільки у <strong>Москві</strong>!
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-3 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-1.5 font-mono text-[11px]">
-                <div className="font-bold text-cyan-400 uppercase">Як дістатися до Відділу ДПС:</div>
-                <div className="text-slate-300">1. Натисніть кнопку <strong>«ПРОКЛАСТИ МАРШРУТ У GPS»</strong> нижче (ввімкне навігатор).</div>
-                <div className="text-slate-300">2. Або оберіть місто <strong>[🇷🇺 Москва]</strong> у верхньому селекторі міст.</div>
-                <div className="text-slate-300">3. Або прорвіться з передової <strong>«Фронт»</strong> (для бійців ЗСУ) по трасі до кордону [F].</div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-800">
-              <button
-                onClick={() => setShowDpsGuide(false)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition-all cursor-pointer"
-              >
-                Закрити
-              </button>
-              <button
-                onClick={() => {
-                  setShowDpsGuide(false);
-                  handleGoToDps();
-                }}
-                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-400 text-white font-black text-xs rounded-xl shadow-lg shadow-blue-500/40 transition-all flex items-center gap-2 cursor-pointer"
-              >
-                <span>📍</span>
-                <span>ПРОКЛАСТИ МАРШРУТ У GPS</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Multiplayer Lobby & Server Connection Modal */}
       {isMultiplayerOpen && (
@@ -3659,6 +3604,18 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
           <button className="px-3.5 py-1 bg-yellow-400 text-slate-950 font-black text-xs rounded-xl hover:bg-yellow-300 transition-all shadow-md">
             {isArmy ? 'ШТАБ ЗСУ' : 'ВСТУПИТИ В ЗСУ'}
           </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              playClickSound();
+              setIsMultiplayerOpen(true);
+            }}
+            className="flex items-center gap-1 px-3.5 py-1 bg-gradient-to-r from-teal-500 to-cyan-600 text-white font-black text-xs rounded-xl hover:from-teal-400 hover:to-cyan-500 border border-cyan-300/70 transition-all shadow-md"
+            title="Відкрити мультиплеєр: грати разом із друзями онлайн"
+          >
+            <Globe size={12} className="text-yellow-300" />
+            <span>МУЛЬТИПЛЕЄР{connectedPlayersList.length > 0 ? ` (${connectedPlayersList.length + 1})` : ''}</span>
+          </button>
         </div>
       )}
 
@@ -3774,31 +3731,6 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
           <div className="flex flex-col">
             <span className="text-[10px] text-blue-300 font-mono font-bold uppercase">Паркувальне місце</span>
             <span className="text-xs font-bold text-white truncate max-w-[220px]">{currentParkingLot}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Moscow DPS Compass & Quick Action Widget */}
-      {selectedCity === 'moscow' && !activeDpsModal && (
-        <div className="absolute top-20 right-4 z-20 flex items-center gap-2.5 bg-slate-950/90 border border-blue-500/80 p-2.5 rounded-2xl shadow-[0_0_25px_rgba(37,99,235,0.4)] text-xs font-mono text-white backdrop-blur-md">
-          <span className="text-2xl animate-pulse">🚨</span>
-          <div className="flex flex-col">
-            <span className="font-black text-blue-300 text-[11px] uppercase tracking-wide">
-              ВІДДІЛ ДПС (X: 35, Z: 35)
-            </span>
-            <span className="text-[10px] text-slate-300">
-              Дистанція: <strong className="text-yellow-400 font-bold">{dpsDistance !== null ? `${dpsDistance}м` : '35м'}</strong> (Садове кільце)
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 ml-1">
-            <button
-              onClick={() => handleGoToDps()}
-              className="px-2.5 py-1 bg-blue-600/90 hover:bg-blue-500 text-white border border-blue-400/50 rounded-lg text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1 shadow-md"
-              title="Прокласти маршрут в GPS навігаторі"
-            >
-              <span>📍</span>
-              <span>Маршрут в GPS</span>
-            </button>
           </div>
         </div>
       )}
@@ -3978,6 +3910,20 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
               <Zap size={13} className={selectedCity === 'zaporizhzhia' ? 'text-slate-950' : 'text-amber-400'} />
               <span>Запоріжжя ⚡</span>
             </button>
+            {/* Tokmak (Zaporizhzhia Oblast) */}
+            <button
+              onClick={() => handleSelectCity('tokmak')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+                selectedCity === 'tokmak'
+                  ? 'bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-slate-950 font-black shadow-md shadow-amber-500/40'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Перейти у Токмак (Стела, р. Токмачка, Вокзал Великий Токмак, Дизельмаш, СЕС Токмак)"
+            >
+              <span>🌻</span>
+              <span>Токмак</span>
+            </button>
+
             {/* Frontline (Strictly ZSU Only) */}
             <button
               onClick={() => handleSelectCity('frontline')}
@@ -4006,27 +3952,6 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
             >
               <span>🇷🇺</span>
               <span>Москва</span>
-            </button>
-
-            {/* Quick DPS Finder Button */}
-            <button
-              onClick={() => {
-                if (selectedCity === 'moscow') {
-                  handleGoToDps();
-                } else {
-                  setShowDpsGuide(true);
-                }
-              }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600/90 hover:bg-blue-500 text-white font-black shadow-md shadow-blue-500/30 border border-blue-400/80 transition-all cursor-pointer"
-              title="Прокласти маршрут в GPS до Відділу ДПС"
-            >
-              <span className="animate-pulse">🚨</span>
-              <span>ВІДДІЛ ДПС</span>
-              {selectedCity === 'moscow' && dpsDistance !== null && (
-                <span className="bg-blue-950 text-blue-200 px-1.5 py-0.2 rounded text-[10px] font-mono border border-blue-400/40">
-                  {dpsDistance}м
-                </span>
-              )}
             </button>
           </div>
 
@@ -4415,7 +4340,7 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
           {/* Quick Landmark Buttons */}
           <div>
             <div className="text-[10px] font-mono text-slate-400 mb-1.5 uppercase">
-              Додати пам'ятку ({selectedCity === 'kyiv' ? 'Київ' : selectedCity === 'zaporizhzhia' ? 'Запоріжжя' : 'Вінниця'}):
+              Додати пам'ятку ({selectedCity === 'tokmak' ? 'Токмак' : selectedCity === 'kyiv' ? 'Київ' : selectedCity === 'zaporizhzhia' ? 'Запоріжжя' : 'Вінниця'}):
             </div>
             <div className="flex flex-wrap gap-1">
               {(selectedCity === 'frontline'
@@ -4426,6 +4351,8 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
                 ? KYIV_LANDMARKS
                 : selectedCity === 'zaporizhzhia'
                 ? ZAPORIZHZHIA_LANDMARKS
+                : selectedCity === 'tokmak'
+                ? TOKMAK_LANDMARKS
                 : VINNYTSIA_LANDMARKS
               ).slice(0, 7).map(lm => (
                 <button
@@ -4443,7 +4370,7 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
           {/* Presets */}
           <div>
             <div className="text-[10px] font-mono text-slate-400 mb-1 uppercase">
-              Готові маршрути ({selectedCity === 'frontline' ? 'Фронт' : selectedCity === 'moscow' ? 'Москва' : selectedCity === 'kyiv' ? 'Київ' : selectedCity === 'zaporizhzhia' ? 'Запоріжжя' : 'Вінниця'}):
+              Готові маршрути ({selectedCity === 'frontline' ? 'Фронт' : selectedCity === 'moscow' ? 'Москва' : selectedCity === 'tokmak' ? 'Токмак' : selectedCity === 'kyiv' ? 'Київ' : selectedCity === 'zaporizhzhia' ? 'Запоріжжя' : 'Вінниця'}):
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
               {(selectedCity === 'frontline'
@@ -4454,6 +4381,8 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
                 ? KYIV_PRESET_ROUTES
                 : selectedCity === 'zaporizhzhia'
                 ? ZAPORIZHZHIA_PRESET_ROUTES
+                : selectedCity === 'tokmak'
+                ? TOKMAK_PRESET_ROUTES
                 : VINNYTSIA_PRESET_ROUTES
               ).map(pr => (
                 <button
@@ -4526,6 +4455,8 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
               ? '🏛️ РАДАР: КИЇВ'
               : selectedCity === 'zaporizhzhia'
               ? '⚡ РАДАР: ЗАПОРІЖЖЯ'
+              : selectedCity === 'tokmak'
+              ? '🌻 РАДАР: ТОКМАК'
               : '📍 РАДАР: ВІННИЦЯ'}
           </span>
         </div>
@@ -4634,6 +4565,47 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
 
               {/* Festivalska Square dot */}
               <div className="absolute top-[28%] right-4 w-2 h-2 rounded-full bg-amber-400 border border-white" />
+            </>
+          ) : selectedCity === 'tokmak' ? (
+            <>
+              {/* Steppe River Tokmachka */}
+              <div className="absolute top-0 left-[35%] w-3.5 h-full bg-cyan-700/60" />
+              <div className="absolute bottom-1 left-1 text-[6.5px] font-mono text-cyan-300">р. Токмачка</div>
+
+              {/* Main Highway P37 across bridge */}
+              <div className="absolute top-1/2 left-0 w-full h-3 bg-slate-600/90 -translate-y-1/2 border-y border-slate-500" />
+              {/* Central Street */}
+              <div className="absolute top-0 left-[65%] w-3 h-full bg-slate-600/80 -translate-x-1/2 border-x border-slate-500" />
+
+              {/* City Hall / Central Square */}
+              <div className="absolute top-[38%] left-[68%] flex items-center gap-0.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-amber-400 border border-white animate-pulse" />
+                <span className="text-[6px] font-bold text-amber-200 font-mono">Мерія</span>
+              </div>
+
+              {/* Railway Station Velykyi Tokmak */}
+              <div className="absolute top-2 right-2 flex items-center gap-0.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-blue-500 border border-white" />
+                <span className="text-[6px] font-bold text-blue-200 font-mono">Вокзал</span>
+              </div>
+
+              {/* Diesel Machine Factory */}
+              <div className="absolute top-2 left-2 flex items-center gap-0.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-rose-500 border border-white" />
+                <span className="text-[6px] font-bold text-rose-200 font-mono">Дизельмаш</span>
+              </div>
+
+              {/* Grain Elevator */}
+              <div className="absolute bottom-2 right-2 flex items-center gap-0.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-yellow-500 border border-white" />
+                <span className="text-[6px] font-bold text-yellow-200 font-mono">Елеватор</span>
+              </div>
+
+              {/* Tokmak Solar Farm */}
+              <div className="absolute bottom-2 left-2 flex items-center gap-0.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 border border-white" />
+                <span className="text-[6px] font-bold text-cyan-200 font-mono">СЕС</span>
+              </div>
             </>
           ) : (
             <>

@@ -121,6 +121,20 @@ const MOSCOW_SIDEWALKS = [
   { x: -65, z: -90 }, { x: -75, z: -90 }, { x: -55, z: -90 }
 ];
 
+// Sidewalk routes for Tokmak
+const TOKMAK_SIDEWALKS = [
+  // Central Street Sidewalks
+  { x: 55, z: -100 }, { x: 55, z: -50 }, { x: 55, z: 0 }, { x: 55, z: 50 }, { x: 55, z: 100 },
+  { x: 65, z: -100 }, { x: 65, z: -50 }, { x: 65, z: 0 }, { x: 65, z: 50 }, { x: 65, z: 100 },
+  // Main Highway Sidewalk
+  { x: -10, z: -9 }, { x: 30, z: -9 }, { x: 90, z: -9 }, { x: 150, z: -9 },
+  { x: -10, z: 9 }, { x: 30, z: 9 }, { x: 90, z: 9 }, { x: 150, z: 9 },
+  // City Hall Plaza
+  { x: 50, z: 45 }, { x: 70, z: 45 }, { x: 60, z: 75 },
+  // Station Platform & Entrance
+  { x: 130, z: -105 }, { x: 140, z: -105 }, { x: 150, z: -105 }
+];
+
 // Sidewalk routes for Frontline
 const FRONTLINE_SIDEWALKS = [
   // ZSU Trenches & Bunkers
@@ -166,6 +180,8 @@ export class PedestrianSystem {
         ? KYIV_SIDEWALKS
         : this.cityId === 'zaporizhzhia'
         ? ZAPORIZHZHIA_SIDEWALKS
+        : this.cityId === 'tokmak'
+        ? TOKMAK_SIDEWALKS
         : this.cityId === 'moscow'
         ? MOSCOW_SIDEWALKS
         : this.cityId === 'frontline'
