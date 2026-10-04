@@ -417,6 +417,7 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
 
   const [dpsDistance, setDpsDistance] = useState(null);
   const [showDpsGuide, setShowDpsGuide] = useState(false);
+  const [frontlineStats, setFrontlineStats] = useState({ aliveCount: 0, totalKills: 0 });
 
   const frontlineEnemiesRef = useRef(null);
   const frontlineTriggersRef = useRef(null);
@@ -1682,12 +1683,19 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
         ? { x: humanRef.current?.x || 0, y: 0, z: humanRef.current?.z || 0 }
         : { x: physicsRef.current?.x || 0, y: 0, z: physicsRef.current?.z || 0 };
 
-      // Update Frontline Russian Enemies (AI, Shooting bursts, Damage)
+      // Update Frontline Russian Enemies (AI, Shooting bursts, Damage, Ramming, Reinforcements)
       if (frontlineEnemiesRef.current) {
+        const vehicleState = {
+          isDriving: !isHumanOnFootRef.current,
+          speedKmh: Math.abs(physicsRef.current?.speedKmh || 0),
+          isTank: isDrivingTankRef.current,
+          isKozak: isDrivingMilitaryCarRef.current
+        };
         const enemyEvents = frontlineEnemiesRef.current.update(
           dt,
           currentPos,
-          currentWeaponAction
+          currentWeaponAction,
+          vehicleState
         );
         if (enemyEvents && enemyEvents.length > 0) {
           enemyEvents.forEach(evt => {
@@ -1705,9 +1713,21 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
                 type: 'knockout'
               });
               setTimeout(() => setCombatBanner(null), 3000);
+            } else if (evt.type === 'reinforcements_arrived') {
+              setCombatBanner({
+                text: `⚠️ ПІДКРІПЛЕННЯ ВОРОГА: +${evt.count} нових окупантів на рубежах!`,
+                type: 'warning'
+              });
+              setTimeout(() => setCombatBanner(null), 3500);
             }
           });
         }
+
+        const combatStats = frontlineEnemiesRef.current.getCombatStats();
+        setFrontlineStats({
+          aliveCount: combatStats.aliveCount,
+          totalKills: combatStats.totalKills
+        });
       }
 
       // Proximity checks for Frontline & Moscow Interactive Triggers
@@ -3802,6 +3822,23 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
               <span>⚡</span>
               <span>Телепорт</span>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Frontline Combat Status Widget */}
+      {selectedCity === 'frontline' && (
+        <div className="absolute top-20 right-4 z-20 flex items-center gap-3 bg-slate-950/90 border border-emerald-500/80 p-2.5 rounded-2xl shadow-[0_0_25px_rgba(16,185,129,0.4)] text-xs font-mono text-white backdrop-blur-md">
+          <span className="text-2xl animate-pulse">🪖</span>
+          <div className="flex flex-col">
+            <span className="font-black text-emerald-300 text-[11px] uppercase tracking-wide">
+              ПЕРЕДОВА ЗСУ • ОКУПАНТИ
+            </span>
+            <div className="flex items-center gap-2 text-[10px] text-slate-300 mt-0.5">
+              <span>🎯 На позиціях: <strong className="text-rose-400 font-bold">{frontlineStats.aliveCount}</strong></span>
+              <span className="text-slate-600">|</span>
+              <span>💀 Ліквідовано: <strong className="text-emerald-400 font-bold">{frontlineStats.totalKills}</strong></span>
+            </div>
           </div>
         </div>
       )}
