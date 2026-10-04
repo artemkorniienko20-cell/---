@@ -3601,21 +3601,28 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
                 : 'Натисніть [F] або [ENTER], щоб вступити до ЗСУ та захищати місто від шахедів'}
             </span>
           </div>
-          <button className="px-3.5 py-1 bg-yellow-400 text-slate-950 font-black text-xs rounded-xl hover:bg-yellow-300 transition-all shadow-md">
-            {isArmy ? 'ШТАБ ЗСУ' : 'ВСТУПИТИ В ЗСУ'}
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              playClickSound();
-              setIsMultiplayerOpen(true);
-            }}
-            className="flex items-center gap-1 px-3.5 py-1 bg-gradient-to-r from-teal-500 to-cyan-600 text-white font-black text-xs rounded-xl hover:from-teal-400 hover:to-cyan-500 border border-cyan-300/70 transition-all shadow-md"
-            title="Відкрити мультиплеєр: грати разом із друзями онлайн"
-          >
-            <Globe size={12} className="text-yellow-300" />
-            <span>МУЛЬТИПЛЕЄР{connectedPlayersList.length > 0 ? ` (${connectedPlayersList.length + 1})` : ''}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                playClickSound();
+                setIsMultiplayerOpen(true);
+              }}
+              className="flex flex-col items-center px-2.5 py-1 bg-slate-950/80 hover:bg-slate-900 border border-emerald-400/70 rounded-xl text-[10px] font-mono font-bold leading-tight transition-all shadow-md"
+              title="Гравці онлайн • Натисніть, щоб відкрити мультиплеєр"
+            >
+              <span className="flex items-center gap-1 text-emerald-300">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                ОНЛАЙН: {connectedPlayersList.length + 1}
+              </span>
+              <span className="text-yellow-300">
+                🪖 ЗСУ: {connectedPlayersList.filter(p => p.role === 'army').length + (isArmy ? 1 : 0)}
+              </span>
+            </button>
+            <button className="px-3.5 py-1 bg-yellow-400 text-slate-950 font-black text-xs rounded-xl hover:bg-yellow-300 transition-all shadow-md">
+              {isArmy ? 'ШТАБ ЗСУ' : 'ВСТУПИТИ В ЗСУ'}
+            </button>
+          </div>
         </div>
       )}
 
