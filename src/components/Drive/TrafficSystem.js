@@ -118,6 +118,59 @@ export class TrafficSystem {
           { x: -130, z: -18 }
         ]
       ];
+    } else if (cityId === 'moscow') {
+      this.routes = [
+        // 1. Garden Ring Avenue Northbound (Lane X: 5.5)
+        [
+          { x: 5.5, z: 240 },
+          { x: 5.5, z: 120 },
+          { x: 5.5, z: 0 },
+          { x: 5.5, z: -120 },
+          { x: 5.5, z: -240 }
+        ],
+        // 2. Garden Ring Avenue Southbound (Lane X: -5.5)
+        [
+          { x: -5.5, z: -240 },
+          { x: -5.5, z: -120 },
+          { x: -5.5, z: 0 },
+          { x: -5.5, z: 120 },
+          { x: -5.5, z: 240 }
+        ],
+        // 3. Cross Avenue Eastbound (Lane Z: 4.5)
+        [
+          { x: -220, z: 4.5 },
+          { x: -100, z: 4.5 },
+          { x: 0, z: 4.5 },
+          { x: 100, z: 4.5 },
+          { x: 220, z: 4.5 }
+        ],
+        // 4. Cross Avenue Westbound (Lane Z: -4.5)
+        [
+          { x: 220, z: -4.5 },
+          { x: 100, z: -4.5 },
+          { x: 0, z: -4.5 },
+          { x: -100, z: -4.5 },
+          { x: -220, z: -4.5 }
+        ]
+      ];
+    } else if (cityId === 'frontline') {
+      this.routes = [
+        // Military supply convoy through central frontline road
+        [
+          { x: 3.5, z: 140 },
+          { x: 3.5, z: 60 },
+          { x: 3.5, z: 0 },
+          { x: 3.5, z: -60 },
+          { x: 3.5, z: -160 }
+        ],
+        [
+          { x: -3.5, z: -160 },
+          { x: -3.5, z: -60 },
+          { x: -3.5, z: 0 },
+          { x: -3.5, z: 60 },
+          { x: -3.5, z: 140 }
+        ]
+      ];
     } else {
       // Vinnytsia Traffic Routes
       this.routes = [
@@ -414,6 +467,12 @@ export class TrafficSystem {
         brakeFactor = 0;
       }
 
+      // Stopped by DPS Inspector check
+      if (bot.stoppedTimer > 0) {
+        bot.stoppedTimer -= dt;
+        brakeFactor = 0;
+      }
+
       // Move bot forward
       const effectiveSpeed = bot.baseSpeed * brakeFactor;
       bot.x += Math.sin(bot.yaw) * effectiveSpeed * dt;
@@ -437,6 +496,30 @@ export class TrafficSystem {
       trafficCrashEvent,
       hitHumanEvent
     };
+  }
+
+  stopNearestVehicle(inspectorPos, range = 35.0) {
+    let closestBot = null;
+    let minDist = range;
+
+    this.bots.forEach(bot => {
+      const dist = Math.hypot(bot.x - inspectorPos.x, bot.z - inspectorPos.z);
+      if (dist < minDist) {
+        minDist = dist;
+        closestBot = bot;
+      }
+    });
+
+    if (closestBot) {
+      closestBot.speed = 0;
+      closestBot.stoppedTimer = 8.0; // Stop car for 8 seconds
+      return {
+        stopped: true,
+        carName: closestBot.name,
+        speed: Math.round(22 + Math.random() * 45)
+      };
+    }
+    return null;
   }
 
   destroy() {

@@ -212,6 +212,66 @@ export const KYIV_PRESET_ROUTES = [
 ];
 
 /**
+ * Frontline Landmarks & Routes (Зона бойових дій • Тільки ЗСУ)
+ */
+export const FRONTLINE_LANDMARKS = [
+  { id: 'zsu_hq', x: -35, z: 110, name: 'Командний штаб ЗСУ «Скеля»', desc: 'Укріплений бункер командування передової' },
+  { id: 'frontline_trenches', x: 0, z: 20, name: 'Головна лінія оборони ЗСУ', desc: 'Мережа траншей, мішки з піском та вогневі позиції' },
+  { id: 'gray_zone', x: 0, z: -30, name: 'Сіра зона (Мінні поля & вирви)', desc: 'Нічийна земля, розбита артилерією техніка ворога' },
+  { id: 'enemy_front', x: 0, z: -100, name: 'Ворожі рубежі (Позиції окупантів)', desc: 'Опорні пункти та ДОТи армії РФ' },
+  { id: 'moscow_highway_gate', x: 0, z: -200, name: 'Прорив кордону • Траса на Москву', desc: 'Прикордонний КПП та прямий шлях у напрямку Москви' },
+  { id: 'evac_point', x: 0, z: 160, name: 'Пункт ротації • Евакуація в Київ', desc: 'Тиловий пункт зв\'язку та повернення до столиці' }
+];
+
+export const DEFAULT_FRONTLINE_ROUTE = [
+  { x: 0, z: 140, name: 'Тилова база постачання ЗСУ' },
+  { x: 0, z: 70, name: 'Передовий редут ЗСУ' },
+  { x: 0, z: 0, name: 'Лінія зіткнення' },
+  { x: 0, z: -60, name: 'Сіра зона' },
+  { x: 0, z: -130, name: 'Рубіж окупантів' },
+  { x: 0, z: -200, name: 'Прорив кордону на Москву' }
+];
+
+export const FRONTLINE_PRESET_ROUTES = [
+  {
+    id: 'frontline_offensive',
+    name: '⚔️ Прорив рубежів: Від штабу ЗСУ до кордону',
+    waypoints: DEFAULT_FRONTLINE_ROUTE
+  }
+];
+
+/**
+ * Moscow Landmarks & Routes (Локація «Москва» • ДПС & Київський вокзал)
+ */
+export const MOSCOW_LANDMARKS = [
+  { id: 'red_square', x: 0, z: 0, name: 'Красна площа (Бруківка)', desc: 'Центральна площа біля кремлівських стін' },
+  { id: 'spasskaya_tower', x: 0, z: 45, name: 'Спаська вежа з курантами', desc: 'Головна кремлівська вежа з годинником' },
+  { id: 'st_basil', x: 45, z: -20, name: 'Собор Василя Блаженного', desc: 'Храм з різнокольоровими куполами-цибулинами' },
+  { id: 'moscow_city', x: 120, z: -40, name: 'Діловий квартал «Москва-Сіті»', desc: 'Скляні гігантські хмарочоси: Федерація, Еволюція, Меркурій' },
+  { id: 'dps_post', x: 35, z: 35, name: 'Головний Пост ДПС (Робота)', desc: 'Стакан інспектора ДПС, службове авто та регулювання руху' },
+  { id: 'kyiv_station', x: -65, z: -98, name: 'Київський вокзал (Повернення в Київ)', desc: 'Евакуаційний пункт та квиток назад в Україну' }
+];
+
+export const DEFAULT_MOSCOW_ROUTE = [
+  { x: 0, z: 10, name: 'Красна площа' },
+  { x: 35, z: 35, name: 'Пост ДПС' },
+  { x: 100, z: 0, name: 'Проспект до Москва-Сіті' },
+  { x: 120, z: -40, name: 'Вежі Москва-Сіті' },
+  { x: 0, z: -80, name: 'Садове кільце' },
+  { x: -65, z: -98, name: 'Київський вокзал (Назад у Київ)' },
+  { x: 0, z: 0, name: 'Фініш: Красна площа' }
+];
+
+export const MOSCOW_PRESET_ROUTES = [
+  {
+    id: 'moscow_patrol',
+    name: '🚨 Патрульний рейд ДПС столицею',
+    waypoints: DEFAULT_MOSCOW_ROUTE
+  }
+];
+
+
+/**
  * Vehicle dynamics, collision crash & destruction physics simulation
  */
 export class DrivePhysics {

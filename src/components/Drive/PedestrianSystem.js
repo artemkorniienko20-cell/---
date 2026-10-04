@@ -106,6 +106,28 @@ const KYIV_SIDEWALKS = [
   { x: 80, z: -320 }, { x: 90, z: -320 }, { x: 100, z: -330 }, { x: 70, z: -300 }
 ];
 
+// Sidewalk routes for Moscow
+const MOSCOW_SIDEWALKS = [
+  // Red Square Promenade
+  { x: -110, z: -40 }, { x: -110, z: 0 }, { x: -110, z: 40 }, { x: -90, z: 20 }, { x: -90, z: -20 },
+  // Spasskaya Tower approach
+  { x: -150, z: -20 }, { x: -150, z: 20 },
+  // Garden Ring Sidewalks
+  { x: 14, z: -180 }, { x: 14, z: -60 }, { x: 14, z: 60 }, { x: 14, z: 180 },
+  { x: -14, z: -180 }, { x: -14, z: -60 }, { x: -14, z: 60 }, { x: -14, z: 180 },
+  // DPS Station
+  { x: 30, z: 32 }, { x: 35, z: 42 }, { x: 45, z: 35 },
+  // Kyiv Railway Station
+  { x: -65, z: -90 }, { x: -75, z: -90 }, { x: -55, z: -90 }
+];
+
+// Sidewalk routes for Frontline
+const FRONTLINE_SIDEWALKS = [
+  // ZSU Trenches & Bunkers
+  { x: -35, z: 100 }, { x: -25, z: 90 }, { x: 0, z: 80 }, { x: 25, z: 90 }, { x: 35, z: 100 },
+  { x: -20, z: 120 }, { x: 0, z: 120 }, { x: 20, z: 120 }
+];
+
 export class PedestrianSystem {
   constructor(scene, cityId = 'vinnytsia') {
     this.scene = scene;
@@ -139,7 +161,16 @@ export class PedestrianSystem {
   }
 
   spawnPedestrians(count = 18) {
-    const waypoints = this.cityId === 'kyiv' ? KYIV_SIDEWALKS : this.cityId === 'zaporizhzhia' ? ZAPORIZHZHIA_SIDEWALKS : VINNYTSIA_SIDEWALKS;
+    const waypoints =
+      this.cityId === 'kyiv'
+        ? KYIV_SIDEWALKS
+        : this.cityId === 'zaporizhzhia'
+        ? ZAPORIZHZHIA_SIDEWALKS
+        : this.cityId === 'moscow'
+        ? MOSCOW_SIDEWALKS
+        : this.cityId === 'frontline'
+        ? FRONTLINE_SIDEWALKS
+        : VINNYTSIA_SIDEWALKS;
 
     for (let i = 0; i < count; i++) {
       const profile = NPC_NAMES[i % NPC_NAMES.length];

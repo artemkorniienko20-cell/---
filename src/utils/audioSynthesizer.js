@@ -1807,6 +1807,104 @@ export function stopDroneFlightSound() {
 
 export const playRadioBeepSound = playPoliceRadioSound;
 
+// Police / DPS Traffic Inspector Whistle
+export function playPoliceWhistleSound() {
+  if (isMuted) return;
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  const now = ctx.currentTime;
+  const osc1 = ctx.createOscillator();
+  const osc2 = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  // Dual tone typical for traffic whistles
+  osc1.type = 'triangle';
+  osc2.type = 'sawtooth';
+  osc1.frequency.setValueAtTime(2600, now);
+  osc1.frequency.linearRampToValueAtTime(2750, now + 0.15);
+  osc1.frequency.linearRampToValueAtTime(2550, now + 0.35);
+
+  osc2.frequency.setValueAtTime(2850, now);
+  osc2.frequency.linearRampToValueAtTime(3000, now + 0.15);
+  osc2.frequency.linearRampToValueAtTime(2800, now + 0.35);
+
+  // Tremolo vibrato effect
+  const lfo = ctx.createOscillator();
+  const lfoGain = ctx.createGain();
+  lfo.frequency.setValueAtTime(28, now);
+  lfoGain.gain.setValueAtTime(60, now);
+  lfo.connect(osc1.frequency);
+  lfo.connect(osc2.frequency);
+  lfo.start(now);
+  lfo.stop(now + 0.38);
+
+  gain.gain.setValueAtTime(0.001, now);
+  gain.gain.linearRampToValueAtTime(0.18, now + 0.03);
+  gain.gain.setValueAtTime(0.16, now + 0.28);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+
+  osc1.connect(gain);
+  osc2.connect(gain);
+  gain.connect(ctx.destination);
+
+  osc1.start(now);
+  osc2.start(now);
+  osc1.stop(now + 0.38);
+  osc2.stop(now + 0.38);
+}
+
+// Distant Battlefield Artillery Shell & Blast
+export function playArtilleryShellSound() {
+  if (isMuted) return;
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  const now = ctx.currentTime;
+  // Whistle incoming
+  const whistleOsc = ctx.createOscillator();
+  const whistleGain = ctx.createGain();
+  whistleOsc.type = 'sine';
+  whistleOsc.frequency.setValueAtTime(1400, now);
+  whistleOsc.frequency.exponentialRampToValueAtTime(350, now + 0.45);
+
+  whistleGain.gain.setValueAtTime(0.001, now);
+  whistleGain.gain.linearRampToValueAtTime(0.12, now + 0.2);
+  whistleGain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+  whistleOsc.connect(whistleGain);
+  whistleGain.connect(ctx.destination);
+  whistleOsc.start(now);
+  whistleOsc.stop(now + 0.45);
+
+  // Blast noise
+  setTimeout(() => {
+    try {
+      const bufferSize = ctx.sampleRate * 1.2;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.28));
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(180, ctx.currentTime);
+
+      const bGain = ctx.createGain();
+      bGain.gain.setValueAtTime(0.25, ctx.currentTime);
+      bGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
+
+      noise.connect(filter);
+      filter.connect(bGain);
+      bGain.connect(ctx.destination);
+      noise.start();
+    } catch {}
+  }, 420);
+}
+
+
 
 
 

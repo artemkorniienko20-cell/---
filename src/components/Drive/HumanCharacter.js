@@ -7,7 +7,8 @@ import {
   playHandcuffsSound,
   playExtinguisherSound,
   playGunCockSound,
-  playAk47BurstSound
+  playAk47BurstSound,
+  playPoliceWhistleSound
 } from '../../utils/audioSynthesizer';
 
 /**
@@ -411,6 +412,29 @@ export class HumanCharacter {
     this.droneControllerGroup.position.set(0, -0.02, 0.12);
     this.droneControllerGroup.visible = false;
     handMesh.add(this.droneControllerGroup);
+
+    // 10. DPS Traffic Police Wand (Жезл ДПС смугастий)
+    this.dpsWandGroup = new THREE.Group();
+    const wandHandle = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.018, 0.018, 0.12, 12),
+      new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.9 })
+    );
+    wandHandle.position.y = -0.06;
+    this.dpsWandGroup.add(wandHandle);
+
+    for (let i = 0; i < 6; i++) {
+      const stripeMat = new THREE.MeshStandardMaterial({
+        color: i % 2 === 0 ? 0xffffff : 0x18181b,
+        roughness: 0.4
+      });
+      const seg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.05, 12), stripeMat);
+      seg.position.y = i * 0.05 + 0.025;
+      this.dpsWandGroup.add(seg);
+    }
+    this.dpsWandGroup.position.set(0, -0.05, 0.12);
+    this.dpsWandGroup.rotation.x = Math.PI / 3;
+    this.dpsWandGroup.visible = false;
+    handMesh.add(this.dpsWandGroup);
   }
 
   setProfession(profession) {
@@ -426,6 +450,18 @@ export class HumanCharacter {
       this.leftPatch.visible = true;
       this.rightPatch.visible = true;
       this.policeCockade.visible = true;
+    } else if (profession === 'dps') {
+      // DPS Traffic Police (Робота в ДПС): High-vis lime vest, navy uniform & striped wand
+      this.jacketMat.color.setHex(0x0f172a);
+      this.shirtMat.color.setHex(0xa3e635); // Fluorescent high-vis lime-yellow safety vest
+      this.pantsMat.color.setHex(0x1e293b);
+      this.capMat.color.setHex(0x0f172a);
+      this.shoesMat.color.setHex(0x090d16);
+      this.policeBadge.visible = false;
+      this.leftPatch.visible = false;
+      this.rightPatch.visible = false;
+      this.policeCockade.visible = true;
+      this.setEquippedWeapon('dps_wand');
     } else if (profession === 'army') {
       // Armed Forces of Ukraine (ЗСУ) Pixel Camouflage MM-14
       this.jacketMat.color.setHex(0x3a4d39); // Tactical olive pixel
@@ -463,6 +499,7 @@ export class HumanCharacter {
     if (this.ak74Group) this.ak74Group.visible = weapon === 'ak74';
     if (this.stingerGroup) this.stingerGroup.visible = weapon === 'stinger';
     if (this.droneControllerGroup) this.droneControllerGroup.visible = weapon === 'drone';
+    if (this.dpsWandGroup) this.dpsWandGroup.visible = weapon === 'dps_wand';
   }
 
   triggerWeaponAction() {
@@ -530,6 +567,13 @@ export class HumanCharacter {
     } else if (this.equippedWeapon === 'drone') {
       this.actionCooldown = 0.6;
       return { type: 'drone' };
+    } else if (this.equippedWeapon === 'dps_wand') {
+      playPoliceWhistleSound();
+      this.actionCooldown = 0.5;
+      this.isPunching = true;
+      this.punchTimer = 0.35;
+      this.punchHand = 'right';
+      return { type: 'dps_wand', range: 45.0, isDpsOrder: true };
     }
     return null;
   }

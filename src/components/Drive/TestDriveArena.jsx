@@ -11,11 +11,21 @@ import {
   DEFAULT_ZAPORIZHZHIA_ROUTE,
   KYIV_LANDMARKS,
   KYIV_PRESET_ROUTES,
-  DEFAULT_KYIV_ROUTE
+  DEFAULT_KYIV_ROUTE,
+  FRONTLINE_LANDMARKS,
+  DEFAULT_FRONTLINE_ROUTE,
+  FRONTLINE_PRESET_ROUTES,
+  MOSCOW_LANDMARKS,
+  DEFAULT_MOSCOW_ROUTE,
+  MOSCOW_PRESET_ROUTES
 } from './DrivePhysics';
 import { buildVinnytsiaCity } from './VinnytsiaMap';
 import { buildZaporizhzhiaCity } from './ZaporizhzhiaMap';
 import { buildKyivCity } from './KyivMap';
+import { buildFrontlineMap } from './FrontlineMap';
+import { FrontlineEnemies } from './FrontlineEnemies';
+import { buildMoscowCity } from './MoscowMap';
+import { DpsModal } from './DpsModal';
 import { HumanCharacter } from './HumanCharacter';
 import { TrafficSystem } from './TrafficSystem';
 import { PedestrianSystem } from './PedestrianSystem';
@@ -63,7 +73,9 @@ import {
   playTankCannonSound,
   playExplosionSound,
   startAirRaidSiren,
-  stopAirRaidSiren
+  stopAirRaidSiren,
+  playPoliceWhistleSound,
+  playArtilleryShellSound
 } from '../../utils/audioSynthesizer';
 import { CAR_MODELS } from '../../types/car';
 import {
@@ -350,6 +362,64 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
   const tankCannonCooldownRef = useRef(0);
   const fireTankCannonRef = useRef(null);
 
+  // Frontline, Enemies, Moscow & DPS state & refs
+  const [isDps, setIsDps] = useState(() => {
+    try {
+      return localStorage.getItem('pr5_is_dps') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const isDpsRef = useRef(isDps);
+  isDpsRef.current = isDps;
+
+  const [dpsFinesCount, setDpsFinesCount] = useState(() => {
+    try {
+      const saved = localStorage.getItem('pr5_dps_fines');
+      return saved !== null ? Number(saved) : 0;
+    } catch {
+      return 0;
+    }
+  });
+
+  const [dpsEarnings, setDpsEarnings] = useState(() => {
+    try {
+      const saved = localStorage.getItem('pr5_dps_earnings');
+      return saved !== null ? Number(saved) : 0;
+    } catch {
+      return 0;
+    }
+  });
+
+  const [activeDpsModal, setActiveDpsModal] = useState(false);
+  const activeDpsModalRef = useRef(activeDpsModal);
+  activeDpsModalRef.current = activeDpsModal;
+
+  const [nearDpsPost, setNearDpsPost] = useState(false);
+  const nearDpsPostRef = useRef(nearDpsPost);
+  nearDpsPostRef.current = nearDpsPost;
+
+  const [nearDpsCar, setNearDpsCar] = useState(false);
+  const nearDpsCarRef = useRef(nearDpsCar);
+  nearDpsCarRef.current = nearDpsCar;
+
+  const [isDrivingDpsCar, setIsDrivingDpsCar] = useState(false);
+  const isDrivingDpsCarRef = useRef(isDrivingDpsCar);
+  isDrivingDpsCarRef.current = isDrivingDpsCar;
+
+  const [nearGateToMoscow, setNearGateToMoscow] = useState(false);
+  const nearGateToMoscowRef = useRef(nearGateToMoscow);
+  nearGateToMoscowRef.current = nearGateToMoscow;
+
+  const [nearReturnToKyiv, setNearReturnToKyiv] = useState(false);
+  const nearReturnToKyivRef = useRef(nearReturnToKyiv);
+  nearReturnToKyivRef.current = nearReturnToKyiv;
+
+  const frontlineEnemiesRef = useRef(null);
+  const frontlineTriggersRef = useRef(null);
+  const moscowTriggersRef = useRef(null);
+  const handleSelectCityRef = useRef(null);
+
   const pedestrianSystemRef = useRef(null);
   const interiorRoomRef = useRef(null);
   const activeInteriorRef = useRef(activeInterior);
@@ -397,6 +467,14 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
       localStorage.setItem('pr5_shahed_kills', String(shahedKills));
     } catch {}
   }, [shahedKills]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('pr5_is_dps', String(isDps));
+      localStorage.setItem('pr5_dps_fines', String(dpsFinesCount));
+      localStorage.setItem('pr5_dps_earnings', String(dpsEarnings));
+    } catch {}
+  }, [isDps, dpsFinesCount, dpsEarnings]);
 
   useEffect(() => {
     try {
@@ -829,6 +907,12 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
           return;
         }
       }
+      if (activeDpsModalRef.current) {
+        if (e.key === 'Escape') {
+          setActiveDpsModal(false);
+        }
+        return;
+      }
       if (activeGunShopRef.current) {
         if (e.key === 'Escape') {
           setActiveGunShop(null);
@@ -893,9 +977,16 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
       if (e.code === 'KeyE' || k === 'e' || k === 'у') {
         if (!activeInteriorRef.current && exitEnterCarRef.current) exitEnterCarRef.current();
       }
-      // Military Base / Police Station / Gun Shop / Housing / Supermarket / Autopilot (F or Enter)
+      // Gateways, Portals, DPS Post, Military Base, Police Station, Housing, Supermarket, Autopilot (F or Enter)
       if (e.code === 'KeyF' || k === 'f' || k === 'а' || k === 'enter') {
-        if (nearMilitaryBaseRef.current) {
+        if (nearGateToMoscowRef.current) {
+          handleSelectCityRef.current?.('moscow');
+        } else if (nearReturnToKyivRef.current) {
+          handleSelectCityRef.current?.('kyiv');
+        } else if (nearDpsPostRef.current) {
+          playClickSound();
+          setActiveDpsModal(true);
+        } else if (nearMilitaryBaseRef.current) {
           if (openMilitaryBaseRef.current) openMilitaryBaseRef.current();
         } else if (nearPoliceStationRef.current) {
           if (openPoliceStationRef.current) openPoliceStationRef.current();
@@ -942,6 +1033,7 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
         if (k === '8' && equipWeaponRef.current) equipWeaponRef.current('ak74');
         if (k === '9' && equipWeaponRef.current) equipWeaponRef.current('stinger');
         if (k === '0' && equipWeaponRef.current) equipWeaponRef.current('drone');
+        if ((k === 'j' || k === 'о') && equipWeaponRef.current && isDpsRef.current) equipWeaponRef.current('dps_wand');
       } else {
         if (k === '1' && setSpeedLimitRef.current) setSpeedLimitRef.current(50);
         if (k === '2' && setSpeedLimitRef.current) setSpeedLimitRef.current(100);
@@ -1036,6 +1128,10 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
         renderer.render(scene, camera);
         return;
       }
+
+      // Capture weapon attack or vehicle cannon action for this frame
+      const currentWeaponAction = weaponActionTriggerRef.current;
+      weaponActionTriggerRef.current = null;
 
       if (isHumanOnFootRef.current) {
         // ================= HUMAN ON-FOOT MODE =================
@@ -1153,9 +1249,6 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
           }
 
           // NPC Pedestrians update & Street Combat / Police Law Enforcement
-          const currentWeaponAction = weaponActionTriggerRef.current;
-          weaponActionTriggerRef.current = null;
-
           // Anti-Air Interception with AK-74, Stinger or FPV Drone
           if (currentWeaponAction && (currentWeaponAction.type === 'ak74' || currentWeaponAction.type === 'stinger' || currentWeaponAction.isAntiAir)) {
             const aimX = -Math.sin(humanState.yaw);
@@ -1192,6 +1285,28 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
               type: 'cash'
             });
             setTimeout(() => setCombatBanner(null), 4000);
+          } else if (currentWeaponAction?.type === 'dps_wand') {
+            const stopRes = trafficSystemRef.current?.stopNearestVehicle(
+              { x: humanState.x, z: humanState.z },
+              45.0
+            );
+            if (stopRes && stopRes.stopped) {
+              const fineAmount = 1000;
+              setDpsFinesCount(c => c + 1);
+              setDpsEarnings(e => e + fineAmount);
+              setPlayerMoney(m => m + fineAmount);
+              setCombatBanner({
+                text: `🛑 ПОРУШНИКА ЗУПИНЕНО ЖЕЗЛОМ ДПС! [${stopRes.botName}] зупинено на узбіччі. Штраф виписано: +₴${fineAmount}!`,
+                type: 'arrest'
+              });
+              setTimeout(() => setCombatBanner(null), 3500);
+            } else {
+              setCombatBanner({
+                text: '🚦 Жезл ДПС: Порушників у зоні 45м не знайдено або вони вже зупинені!',
+                type: 'warning'
+              });
+              setTimeout(() => setCombatBanner(null), 2000);
+            }
           }
 
           const pedEvents = pedestrianSystemRef.current?.update(
@@ -1563,6 +1678,61 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
       const currentPos = isHumanOnFootRef.current
         ? { x: humanRef.current?.x || 0, y: 0, z: humanRef.current?.z || 0 }
         : { x: physicsRef.current?.x || 0, y: 0, z: physicsRef.current?.z || 0 };
+
+      // Update Frontline Russian Enemies (AI, Shooting bursts, Damage)
+      if (frontlineEnemiesRef.current) {
+        const enemyEvents = frontlineEnemiesRef.current.update(
+          dt,
+          currentPos,
+          currentWeaponAction
+        );
+        if (enemyEvents && enemyEvents.length > 0) {
+          enemyEvents.forEach(evt => {
+            if (evt.type === 'player_hit_by_enemy') {
+              setHumanHealth(prevHp => Math.max(0, prevHp - evt.damage));
+              setCombatBanner({
+                text: `💥 ОКУПАНТ (${evt.enemyRole}) ВЛУЧИВ У ВАС! (-${evt.damage}% HP)`,
+                type: 'hurt'
+              });
+              setTimeout(() => setCombatBanner(null), 2500);
+            } else if (evt.type === 'enemy_eliminated') {
+              setPlayerMoney(m => m + evt.reward);
+              setCombatBanner({
+                text: `🎖️ ВОРОГА ЗНЕШКОДЖЕНО: ${evt.role}! Трофейні кошти: +₴${evt.reward}`,
+                type: 'knockout'
+              });
+              setTimeout(() => setCombatBanner(null), 3000);
+            }
+          });
+        }
+      }
+
+      // Proximity checks for Frontline & Moscow Interactive Triggers
+      if (frontlineTriggersRef.current) {
+        const ft = frontlineTriggersRef.current;
+        const distMoscow = Math.hypot(currentPos.x - ft.gateToMoscow.x, currentPos.z - ft.gateToMoscow.z);
+        setNearGateToMoscow(distMoscow < ft.gateToMoscow.radius);
+
+        const distKyiv = Math.hypot(currentPos.x - ft.returnToKyiv.x, currentPos.z - ft.returnToKyiv.z);
+        setNearReturnToKyiv(distKyiv < ft.returnToKyiv.radius);
+      } else if (moscowTriggersRef.current) {
+        setNearGateToMoscow(false);
+        const mt = moscowTriggersRef.current;
+        const distKyiv = Math.hypot(currentPos.x - mt.returnToKyiv.x, currentPos.z - mt.returnToKyiv.z);
+        setNearReturnToKyiv(distKyiv < mt.returnToKyiv.radius);
+
+        const distDps = Math.hypot(currentPos.x - mt.dpsPost.x, currentPos.z - mt.dpsPost.z);
+        setNearDpsPost(distDps < mt.dpsPost.radius);
+
+        const distDpsCar = Math.hypot(currentPos.x - mt.dpsCar.x, currentPos.z - mt.dpsCar.z);
+        setNearDpsCar(distDpsCar < mt.dpsCar.radius);
+      } else {
+        setNearGateToMoscow(false);
+        setNearReturnToKyiv(false);
+        setNearDpsPost(false);
+        setNearDpsCar(false);
+      }
+
       const airEvents = airDefenseRef.current?.update(dt, keysRef.current, currentPos);
 
       if (airEvents && airEvents.length > 0) {
@@ -1686,8 +1856,8 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
         if (currHp <= 0) {
           setHumanHunger(65);
           setPlayerMoney(m => Math.max(0, m - 150));
-          const respX = selectedCity === 'zaporizhzhia' ? 120 : 0;
-          const respZ = selectedCity === 'zaporizhzhia' ? -100 : selectedCity === 'kyiv' ? -10 : -5;
+          const respX = selectedCity === 'zaporizhzhia' ? 120 : selectedCity === 'frontline' ? 0 : selectedCity === 'moscow' ? 0 : 0;
+          const respZ = selectedCity === 'zaporizhzhia' ? -100 : selectedCity === 'frontline' ? 140 : selectedCity === 'moscow' ? 10 : selectedCity === 'kyiv' ? -10 : -5;
           if (isHumanOnFootRef.current && humanRef.current) {
             humanRef.current.spawn(respX, respZ, 0);
           } else {
@@ -1892,6 +2062,54 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
         return;
       }
 
+      // 1d. Entering dedicated DPS Patrol Car in Moscow
+      if (nearDpsCarRef.current) {
+        if (!isDpsRef.current) {
+          playAccessDeniedSound();
+          setCrashBanner({
+            name: '⛔ ТІЛЬКИ ДЛЯ СПІВРОБІТНИКІВ ДПС! Влаштуйтесь на службу в пості ДПС [F]',
+            force: 0,
+            isFsd: true
+          });
+          setTimeout(() => setCrashBanner(null), 3500);
+          return;
+        }
+
+        const dpsCarPos = moscowTriggersRef.current?.dpsCar;
+        const targetX = dpsCarPos ? dpsCarPos.x : p.x;
+        const targetZ = dpsCarPos ? dpsCarPos.z : p.z;
+
+        p.x = targetX;
+        p.z = targetZ;
+        p.yaw = 0;
+        p.speed = 0;
+        p.steeringAngle = 0;
+
+        playDoorSound();
+        playPoliceRadioSound();
+        human.despawn();
+        setIsHumanOnFoot(false);
+        isHumanOnFootRef.current = false;
+        setIsDrivingDpsCar(true);
+        isDrivingDpsCarRef.current = true;
+        setIsDrivingPoliceCar(false);
+        isDrivingPoliceCarRef.current = false;
+        setIsDrivingTank(false);
+        isDrivingTankRef.current = false;
+        setIsDrivingMilitaryCar(false);
+        isDrivingMilitaryCarRef.current = false;
+        setCanEnterCar(false);
+        setNearDpsCar(false);
+
+        setCrashBanner({
+          name: '🚓 ВИ СІЛИ В ПАТРУЛЬНЕ АВТО ДПС! [G] — Сирена та мигалки, [Q] — Жезл',
+          force: 0,
+          isFsd: true
+        });
+        setTimeout(() => setCrashBanner(null), 3500);
+        return;
+      }
+
       // 2. Entering player's standard vehicle
       const carGroup = carBuilderRef.current?.carGroup;
       const targetX = carGroup ? carGroup.position.x : p.x;
@@ -1917,6 +2135,8 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
         isDrivingTankRef.current = false;
         setIsDrivingMilitaryCar(false);
         isDrivingMilitaryCarRef.current = false;
+        setIsDrivingDpsCar(false);
+        isDrivingDpsCarRef.current = false;
         setCanEnterCar(false);
         setCrashBanner({
           name: '🚗 ВИ СІЛИ В АВТОМОБІЛЬ',
@@ -1956,6 +2176,8 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
       isDrivingTankRef.current = false;
       setIsDrivingMilitaryCar(false);
       isDrivingMilitaryCarRef.current = false;
+      setIsDrivingDpsCar(false);
+      isDrivingDpsCarRef.current = false;
       p.speed = 0;
       p.steeringAngle = 0;
 
@@ -2130,18 +2352,67 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
     }
   };
 
-  // City Switcher (Vinnytsia / Zaporizhzhia)
+  // City Switcher (Kyiv / Vinnytsia / Zaporizhzhia / Frontline / Moscow)
   const handleSelectCity = (cityId) => {
     if (cityId === selectedCity) return;
+
+    // Frontline is strictly restricted to Armed Forces of Ukraine (ЗСУ) personnel
+    if (cityId === 'frontline' && !isArmyRef.current && !isArmy) {
+      playAccessDeniedSound();
+      setCrashBanner({
+        name: '⛔ ДОСТУП ЗАБОРОНЕНО! Зона бойових дій «Фронт» доступна тільки для армії ЗСУ! 🔒 Вступіть до ЗСУ!',
+        force: 0,
+        isFsd: true
+      });
+      setTimeout(() => setCrashBanner(null), 4000);
+      return;
+    }
+
     playClickSound();
     setSelectedCity(cityId);
 
     const cityGroup = cityGroupRef.current;
     if (cityGroup && physicsRef.current) {
+      // Clear previous city enemies & triggers
+      if (frontlineEnemiesRef.current) {
+        frontlineEnemiesRef.current.destroy();
+        frontlineEnemiesRef.current = null;
+      }
+      frontlineTriggersRef.current = null;
+      moscowTriggersRef.current = null;
+
       while (cityGroup.children.length > 0) {
         cityGroup.remove(cityGroup.children[0]);
       }
-      if (cityId === 'kyiv') {
+      if (cityId === 'frontline') {
+        const frontlineData = buildFrontlineMap(cityGroup);
+        collidersRef.current = frontlineData.colliders;
+        frontlineTriggersRef.current = frontlineData;
+        physicsRef.current.resetPosition(0, 140, 0); // Near ZSU command bunker
+        physicsRef.current.setRoute(DEFAULT_FRONTLINE_ROUTE);
+        setCustomRoute(DEFAULT_FRONTLINE_ROUTE);
+        if (sceneRef.current) {
+          frontlineEnemiesRef.current = new FrontlineEnemies(sceneRef.current);
+        }
+        playArtilleryShellSound?.();
+        setCrashBanner({
+          name: '🪖 ПЕРЕДОВА ЗОНА: ФРОНТ (ЗСУ)! 🛡️ Окопи • Спалена техніка РФ • Ворожі позиції • Прорив на Москву [F]',
+          force: 0,
+          isFsd: true
+        });
+      } else if (cityId === 'moscow') {
+        const moscowData = buildMoscowCity(cityGroup);
+        collidersRef.current = moscowData.colliders;
+        moscowTriggersRef.current = moscowData;
+        physicsRef.current.resetPosition(0, 10, 0); // Near Red Square
+        physicsRef.current.setRoute(DEFAULT_MOSCOW_ROUTE);
+        setCustomRoute(DEFAULT_MOSCOW_ROUTE);
+        setCrashBanner({
+          name: '🇷🇺 ЛОКАЦІЯ: МОСКВА! Красна площа • Москва-Сіті • Пост ДПС [F] • Повернення в Київ [F]',
+          force: 0,
+          isFsd: true
+        });
+      } else if (cityId === 'kyiv') {
         collidersRef.current = buildKyivCity(cityGroup);
         physicsRef.current.resetPosition(0, -10, 0);
         physicsRef.current.setRoute(DEFAULT_KYIV_ROUTE);
@@ -2198,6 +2469,10 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
       setNearMilitaryCar(false);
       setIsDrivingMilitaryCar(false);
       isDrivingMilitaryCarRef.current = false;
+      setNearDpsPost(false);
+      setNearDpsCar(false);
+      setIsDrivingDpsCar(false);
+      isDrivingDpsCarRef.current = false;
       if (isSirenOnRef.current) {
         stopPoliceSiren();
         setIsSirenOn(false);
@@ -2237,6 +2512,7 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
       setTimeout(() => setCrashBanner(null), 3500);
     }
   };
+  handleSelectCityRef.current = handleSelectCity;
 
   // Reset Car
   const handleResetCar = () => {
@@ -2245,6 +2521,10 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
       physicsRef.current.resetPosition(120, -100, Math.PI);
     } else if (selectedCity === 'kyiv') {
       physicsRef.current.resetPosition(0, -10, 0);
+    } else if (selectedCity === 'frontline') {
+      physicsRef.current.resetPosition(0, 140, 0);
+    } else if (selectedCity === 'moscow') {
+      physicsRef.current.resetPosition(0, 10, 0);
     } else {
       physicsRef.current.resetPosition(0, -5, 0);
     }
@@ -2427,13 +2707,14 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
     }
   };
 
-  // Handle Equip Weapon (1-7: Civilian/Police, 8: AK-74, 9: Stinger, 0: FPV Drone)
+  // Handle Equip Weapon (1-7: Civilian/Police, 8: AK-74, 9: Stinger, 0: FPV Drone, DPS wand)
   const handleEquipWeapon = (weapon) => {
     const isOwned = ownedWeaponsRef.current?.includes(weapon);
     const isPoliceAuthorized = isPoliceRef.current && ['fists', 'taser', 'pistol', 'handcuffs'].includes(weapon);
     const isArmyAuthorized = isArmyRef.current && ['fists', 'ak74', 'stinger', 'drone'].includes(weapon);
+    const isDpsAuthorized = isDpsRef.current && ['fists', 'dps_wand'].includes(weapon);
 
-    if (weapon !== 'fists' && !isPoliceAuthorized && !isArmyAuthorized && !isOwned) {
+    if (weapon !== 'fists' && !isPoliceAuthorized && !isArmyAuthorized && !isDpsAuthorized && !isOwned) {
       playAccessDeniedSound();
       setCrashBanner({
         name: '⛔ ЗБРОЯ НЕ КУПЛЕНА! Придбайте її в магазині зброї «КАЛІБР» або вступіть до поліції чи ЗСУ',
@@ -2458,7 +2739,8 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
       shotgun: '💥 Помповий дробовик Hatsan Escort (120 шкоди)',
       ak74: '🔫 АК-74 «Калаш» 5.45мм (Черги по «Шахедах» [8])',
       stinger: '🚀 ПЗРК «Stinger» / ППО (Збиття дронів з 1 ракети [9])',
-      drone: '🎮 Пульт FPV-дрона (Керування камікадзе [0])'
+      drone: '🎮 Пульт FPV-дрона (Керування камікадзе [0])',
+      dps_wand: '🚦 Жезл ДПС (Зупинка порушників на узбіччі та штраф +₴1,000 [Q])'
     };
     setCrashBanner({
       name: `🛡️ ЕКІПІРОВАНО: ${names[weapon] || weapon}`,
@@ -2538,9 +2820,11 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
   const handleEnlistArmy = () => {
     setIsArmy(true);
     setIsPolice(false);
+    setIsDps(false);
     try {
       localStorage.setItem('pr5_is_army', 'true');
       localStorage.setItem('pr5_is_police', 'false');
+      localStorage.setItem('pr5_is_dps', 'false');
     } catch {}
     if (humanRef.current) {
       humanRef.current.setProfession('army');
@@ -2548,7 +2832,6 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
     }
     setEquippedWeapon('ak74');
     playGunCockSound();
-    playRadioBeepSound();
     setCrashBanner({
       name: '🪖 ВАС ЗАРАХОВАНО ДО ЛАВ ЗСУ! Отримано АК-74 [8], ПЗРК [9], FPV-дрон [0]! Слава Україні! 🇺🇦',
       force: 0,
@@ -2585,16 +2868,82 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
   };
   openMilitaryBaseRef.current = handleOpenMilitaryBase;
 
-  // Police Siren toggle (Key G: Siren & Strobes)
+  // Enlistment into Moscow DPS (Road Patrol Service)
+  const handleEnlistDps = () => {
+    setIsDps(true);
+    isDpsRef.current = true;
+    setIsPolice(false);
+    setIsArmy(false);
+    try {
+      localStorage.setItem('pr5_is_dps', 'true');
+      localStorage.setItem('pr5_is_police', 'false');
+      localStorage.setItem('pr5_is_army', 'false');
+    } catch {}
+    if (humanRef.current) {
+      humanRef.current.setProfession('dps');
+      humanRef.current.setEquippedWeapon('dps_wand');
+    }
+    setEquippedWeapon('dps_wand');
+    if (!ownedWeapons.includes('dps_wand')) {
+      const updated = [...ownedWeapons, 'dps_wand'];
+      setOwnedWeapons(updated);
+      try {
+        localStorage.setItem('pr5_owned_weapons', JSON.stringify(updated));
+      } catch {}
+    }
+    playPoliceWhistleSound();
+    setCrashBanner({
+      name: '👮 ВАС ПРИЙНЯТО В ДПС! Отримано форму, світловідбивний жилет та жезл [Q]! Зупиняйте порушників!',
+      force: 0,
+      isFsd: true
+    });
+    setTimeout(() => setCrashBanner(null), 4000);
+  };
+
+  const handleDischargeDps = () => {
+    setIsDps(false);
+    isDpsRef.current = false;
+    try {
+      localStorage.setItem('pr5_is_dps', 'false');
+    } catch {}
+    if (humanRef.current) {
+      humanRef.current.setProfession(isArmy ? 'army' : isPolice ? 'police' : 'civilian');
+      humanRef.current.setEquippedWeapon('fists');
+    }
+    setEquippedWeapon('fists');
+    playClickSound();
+    setCrashBanner({
+      name: '👤 Ви звільнилися зі служби в ДПС.',
+      force: 0,
+      isFsd: true
+    });
+    setTimeout(() => setCrashBanner(null), 3000);
+  };
+
+  const handleEquipDpsWand = () => {
+    if (humanRef.current) {
+      humanRef.current.setEquippedWeapon('dps_wand');
+    }
+    setEquippedWeapon('dps_wand');
+    playClickSound();
+    setCrashBanner({
+      name: '🚦 ЕКІПІРОВАНО ЖЕЗЛ ДПС! Натисніть [Q] або ЛКМ біля транспорту трафіку для зупинки!',
+      force: 0,
+      isFsd: true
+    });
+    setTimeout(() => setCrashBanner(null), 3000);
+  };
+
+  // Police / DPS Siren toggle (Key G: Siren & Strobes)
   const handleToggleSiren = () => {
-    if (!isDrivingPoliceCarRef.current) return;
+    if (!isDrivingPoliceCarRef.current && !isDrivingDpsCarRef.current) return;
     const nextState = !isSirenOnRef.current;
     setIsSirenOn(nextState);
     isSirenOnRef.current = nextState;
     if (nextState) {
       startPoliceSiren();
       setCrashBanner({
-        name: '🚨 СИРЕНА ТА МИГАЛКИ АКТИВОВАНІ (102 У ДОРОЗІ)',
+        name: isDrivingDpsCarRef.current ? '🚨 СИРЕНА ТА МИГАЛКИ ДПС АКТИВОВАНІ' : '🚨 СИРЕНА ТА МИГАЛКИ АКТИВОВАНІ (102 У ДОРОЗІ)',
         force: 0,
         isFsd: true
       });
@@ -2613,13 +2962,13 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
   // Sync human character appearance and equipment when profession or weapon changes
   useEffect(() => {
     if (humanRef.current) {
-      humanRef.current.setProfession(isArmy ? 'army' : isPolice ? 'police' : 'civilian');
-      if (!isPolice && !isArmy) {
+      humanRef.current.setProfession(isDps ? 'dps' : isArmy ? 'army' : isPolice ? 'police' : 'civilian');
+      if (!isPolice && !isArmy && !isDps) {
         setEquippedWeapon('fists');
         humanRef.current.setEquippedWeapon('fists');
       }
     }
-  }, [isPolice, isArmy]);
+  }, [isPolice, isArmy, isDps]);
 
   useEffect(() => {
     if (humanRef.current) {
@@ -2905,6 +3254,20 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
           onBuyWeapon={handleBuyWeapon}
           ownedWeapons={ownedWeapons}
           isPolice={isPolice}
+        />
+      )}
+
+      {/* Moscow DPS Road Patrol Service Modal */}
+      {activeDpsModal && (
+        <DpsModal
+          isOpen={activeDpsModal}
+          onClose={() => setActiveDpsModal(false)}
+          isDps={isDps}
+          onEnlistDps={handleEnlistDps}
+          onDischargeDps={handleDischargeDps}
+          dpsFinesCount={dpsFinesCount}
+          dpsEarnings={dpsEarnings}
+          onEquipDpsWand={handleEquipDpsWand}
         />
       )}
 
@@ -3298,6 +3661,111 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
         </div>
       )}
 
+      {/* Near Moscow Gateway Banner on Frontline */}
+      {selectedCity === 'frontline' && nearGateToMoscow && (
+        <div
+          onClick={() => handleSelectCity('moscow')}
+          className="absolute top-24 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 bg-gradient-to-r from-red-800 via-rose-900 to-slate-950 text-white px-6 py-3 rounded-2xl border-2 border-amber-400 shadow-[0_0_35px_rgba(239,68,68,0.9)] animate-bounce cursor-pointer hover:scale-105 transition-all select-none"
+        >
+          <span className="text-3xl">🛣️</span>
+          <div className="flex flex-col">
+            <span className="font-black text-xs tracking-wider uppercase flex items-center gap-1.5 text-amber-300">
+              🇷🇺 ПРОРИВ КОРДОНУ • ТРАСА НА МОСКВУ
+            </span>
+            <span className="text-[11px] font-mono text-slate-200">
+              Натисніть [F] або натисніть тут, щоб перейти з фронту в Москву!
+            </span>
+          </div>
+          <button className="px-3.5 py-1 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all">
+            У МОСКВУ [F]
+          </button>
+        </div>
+      )}
+
+      {/* Return to Kyiv Banner (on Frontline evac point or Moscow railway station) */}
+      {(selectedCity === 'moscow' || selectedCity === 'frontline') && nearReturnToKyiv && (
+        <div
+          onClick={() => handleSelectCity('kyiv')}
+          className="absolute top-24 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 bg-gradient-to-r from-blue-700 via-sky-600 to-yellow-500 text-white px-6 py-3 rounded-2xl border-2 border-yellow-300 shadow-[0_0_35px_rgba(250,204,21,0.9)] animate-bounce cursor-pointer hover:scale-105 transition-all select-none"
+        >
+          <span className="text-3xl">🇺🇦</span>
+          <div className="flex flex-col">
+            <span className="font-black text-xs tracking-wider uppercase flex items-center gap-1.5 text-yellow-200">
+              ПОВЕРНЕННЯ В УКРАЇНУ • СТОЛИЦЯ КИЇВ
+            </span>
+            <span className="text-[11px] font-mono text-slate-100">
+              Натисніть [F] або натисніть тут, щоб повернутися назад у Київ на Хрещатик!
+            </span>
+          </div>
+          <button className="px-3.5 py-1 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all">
+            В КИЇВ [F]
+          </button>
+        </div>
+      )}
+
+      {/* Near DPS Post in Moscow Banner */}
+      {selectedCity === 'moscow' && nearDpsPost && !activeDpsModal && (
+        <div
+          onClick={() => setActiveDpsModal(true)}
+          className="absolute top-24 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 bg-gradient-to-r from-blue-900 via-indigo-950 to-slate-950 text-white px-6 py-3 rounded-2xl border-2 border-blue-400 shadow-[0_0_35px_rgba(37,99,235,0.9)] animate-bounce cursor-pointer hover:scale-105 transition-all select-none"
+        >
+          <span className="text-3xl">👮</span>
+          <div className="flex flex-col">
+            <span className="font-black text-xs tracking-wider uppercase flex items-center gap-1.5 text-blue-300">
+              ПОСТ ДПС • РОБОТА В ІНСПЕКЦІЇ
+            </span>
+            <span className="text-[11px] font-mono text-slate-200">
+              {isDps
+                ? 'Натисніть [F] для перегляду статистики, штрафів або звільнення'
+                : 'Натисніть [F] або натисніть тут, щоб влаштуватися на службу в ДПС!'}
+            </span>
+          </div>
+          <button className="px-3.5 py-1 bg-blue-500 hover:bg-blue-400 text-white font-black text-xs rounded-xl shadow-md transition-all">
+            {isDps ? 'ПОСТ ДПС [F]' : 'ВЛАШТУВАТИСЯ В ДПС [F]'}
+          </button>
+        </div>
+      )}
+
+      {/* Near DPS Patrol Car in Moscow Banner */}
+      {isHumanOnFoot && selectedCity === 'moscow' && nearDpsCar && (
+        <div
+          onClick={handleToggleExitEnterCar}
+          className={`absolute top-24 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 text-white px-6 py-3 rounded-2xl border-2 shadow-2xl animate-bounce cursor-pointer hover:scale-105 transition-all select-none ${
+            isDps
+              ? 'bg-gradient-to-r from-blue-800 via-indigo-900 to-slate-950 border-cyan-400 shadow-[0_0_35px_rgba(6,182,212,0.9)]'
+              : 'bg-gradient-to-r from-slate-900 via-red-950 to-slate-900 border-red-500 shadow-[0_0_35px_rgba(239,68,68,0.7)]'
+          }`}
+        >
+          <span className="text-2xl">🚓</span>
+          <div className="flex flex-col">
+            <span className="font-black text-xs tracking-wider uppercase flex items-center gap-1.5">
+              <span>СЛУЖБОВЕ ПАТРУЛЬНЕ АВТО ДПС</span>
+              {isDps ? (
+                <span className="bg-cyan-400 text-slate-950 px-2 py-0.5 rounded text-[10px] font-black">
+                  ДОСТУП ДОЗВОЛЕНО
+                </span>
+              ) : (
+                <span className="bg-red-600 text-white px-2 py-0.5 rounded text-[10px] font-black">
+                  ТІЛЬКИ ДЛЯ ДПС 🔒
+                </span>
+              )}
+            </span>
+            <span className="text-[11px] font-mono text-slate-200">
+              {isDps
+                ? 'Натисніть [E] або натисніть тут, щоб сісти за кермо (Сирена: [G], Жезл: [Q])'
+                : 'Влаштуйтесь на службу в пості ДПС поруч [F], щоб отримати ключ від авто!'}
+            </span>
+          </div>
+          <button
+            className={`px-3.5 py-1 font-black text-xs rounded-xl shadow-md transition-all ${
+              isDps ? 'bg-cyan-400 hover:bg-cyan-300 text-slate-950' : 'bg-red-600 hover:bg-red-500 text-white'
+            }`}
+          >
+            {isDps ? 'СІСТИ В АВТО [E]' : 'ЗАБЛОКОВАНО'}
+          </button>
+        </div>
+      )}
+
       {/* ================= TOP HUD: LOCATION & ACTION BAR ================= */}
       <div className="relative z-20 flex items-center justify-between p-4 bg-gradient-to-b from-black/85 to-transparent">
         <div className="flex items-center gap-3">
@@ -3350,6 +3818,35 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
             >
               <Zap size={13} className={selectedCity === 'zaporizhzhia' ? 'text-slate-950' : 'text-amber-400'} />
               <span>Запоріжжя ⚡</span>
+            </button>
+            {/* Frontline (Strictly ZSU Only) */}
+            <button
+              onClick={() => handleSelectCity('frontline')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+                selectedCity === 'frontline'
+                  ? 'bg-gradient-to-r from-emerald-600 via-green-600 to-emerald-700 text-white font-black shadow-md shadow-emerald-600/40'
+                  : isArmy
+                  ? 'text-emerald-400 hover:text-white'
+                  : 'text-slate-500 hover:text-slate-400 opacity-75'
+              }`}
+              title={isArmy ? 'Перейти на Фронт (Передова, Окопи, Танки, Спалена техніка РФ)' : 'Фронт (Тільки для армії ЗСУ! 🔒 Вступіть до ЗСУ)'}
+            >
+              <span>{isArmy ? '🪖' : '🔒'}</span>
+              <span>Фронт (ЗСУ)</span>
+            </button>
+
+            {/* Moscow (Capital of RF, DPS post, Return to Kyiv) */}
+            <button
+              onClick={() => handleSelectCity('moscow')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+                selectedCity === 'moscow'
+                  ? 'bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white font-black shadow-md shadow-red-600/40'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Перейти у Москву (Красна площа, Москва-Сіті, Служба в ДПС, Київський вокзал)"
+            >
+              <span>🇷🇺</span>
+              <span>Москва</span>
             </button>
           </div>
 
@@ -3741,7 +4238,16 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
               Додати пам'ятку ({selectedCity === 'kyiv' ? 'Київ' : selectedCity === 'zaporizhzhia' ? 'Запоріжжя' : 'Вінниця'}):
             </div>
             <div className="flex flex-wrap gap-1">
-              {(selectedCity === 'kyiv' ? KYIV_LANDMARKS : selectedCity === 'zaporizhzhia' ? ZAPORIZHZHIA_LANDMARKS : VINNYTSIA_LANDMARKS).slice(0, 7).map(lm => (
+              {(selectedCity === 'frontline'
+                ? FRONTLINE_LANDMARKS
+                : selectedCity === 'moscow'
+                ? MOSCOW_LANDMARKS
+                : selectedCity === 'kyiv'
+                ? KYIV_LANDMARKS
+                : selectedCity === 'zaporizhzhia'
+                ? ZAPORIZHZHIA_LANDMARKS
+                : VINNYTSIA_LANDMARKS
+              ).slice(0, 7).map(lm => (
                 <button
                   key={lm.id}
                   onClick={() => addLandmarkToRoute(lm)}
@@ -3757,10 +4263,19 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
           {/* Presets */}
           <div>
             <div className="text-[10px] font-mono text-slate-400 mb-1 uppercase">
-              Готові маршрути ({selectedCity === 'kyiv' ? 'Київ' : selectedCity === 'zaporizhzhia' ? 'Запоріжжя' : 'Вінниця'}):
+              Готові маршрути ({selectedCity === 'frontline' ? 'Фронт' : selectedCity === 'moscow' ? 'Москва' : selectedCity === 'kyiv' ? 'Київ' : selectedCity === 'zaporizhzhia' ? 'Запоріжжя' : 'Вінниця'}):
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-              {(selectedCity === 'kyiv' ? KYIV_PRESET_ROUTES : selectedCity === 'zaporizhzhia' ? ZAPORIZHZHIA_PRESET_ROUTES : VINNYTSIA_PRESET_ROUTES).map(pr => (
+              {(selectedCity === 'frontline'
+                ? FRONTLINE_PRESET_ROUTES
+                : selectedCity === 'moscow'
+                ? MOSCOW_PRESET_ROUTES
+                : selectedCity === 'kyiv'
+                ? KYIV_PRESET_ROUTES
+                : selectedCity === 'zaporizhzhia'
+                ? ZAPORIZHZHIA_PRESET_ROUTES
+                : VINNYTSIA_PRESET_ROUTES
+              ).map(pr => (
                 <button
                   key={pr.id}
                   onClick={() => loadPresetRoute(pr)}
@@ -3819,15 +4334,69 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
         </div>
       )}
 
-      {/* ================= MINIMAP (RADAR: VINNYTSIA / ZAPORIZHZHIA) ================= */}
+      {/* ================= MINIMAP (RADAR: VINNYTSIA / ZAPORIZHZHIA / KYIV / FRONTLINE / MOSCOW) ================= */}
       <div className="absolute top-20 right-4 z-20 bg-slate-950/90 backdrop-blur-md p-2.5 rounded-2xl border border-cyan-500/40 shadow-2xl flex flex-col items-center">
         <div className="text-[10px] font-mono text-cyan-400 font-bold mb-1 flex items-center gap-1">
-          <span>{selectedCity === 'kyiv' ? '🏛️ РАДАР: КИЇВ' : selectedCity === 'zaporizhzhia' ? '⚡ РАДАР: ЗАПОРІЖЖЯ' : '📍 РАДАР: ВІННИЦЯ'}</span>
+          <span>
+            {selectedCity === 'frontline'
+              ? '🪖 РАДАР: ФРОНТ (ЗСУ)'
+              : selectedCity === 'moscow'
+              ? '🇷🇺 РАДАР: МОСКВА'
+              : selectedCity === 'kyiv'
+              ? '🏛️ РАДАР: КИЇВ'
+              : selectedCity === 'zaporizhzhia'
+              ? '⚡ РАДАР: ЗАПОРІЖЖЯ'
+              : '📍 РАДАР: ВІННИЦЯ'}
+          </span>
         </div>
 
         {/* Radar Map Canvas */}
         <div className="relative w-36 h-36 bg-slate-900 rounded-xl overflow-hidden border border-slate-700">
-          {selectedCity === 'kyiv' ? (
+          {selectedCity === 'frontline' ? (
+            <>
+              {/* Central Military Highway */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3.5 h-full bg-stone-700/80 border-x border-stone-600" />
+              {/* ZSU Forward Outpost (Bottom) */}
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1">
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-white" />
+                <span className="text-[6.5px] font-bold text-emerald-300 font-mono">Штаб ЗСУ</span>
+              </div>
+              {/* Trenches & Gray Zone (Middle) */}
+              <div className="absolute top-1/2 left-0 w-full h-4 bg-stone-800/80 border-y border-dashed border-amber-600 flex items-center justify-center -translate-y-1/2">
+                <span className="text-[6px] text-amber-300 font-mono">Сіра зона</span>
+              </div>
+              {/* Russian Positions & Border to Moscow (Top) */}
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 flex items-center gap-1">
+                <div className="w-2.5 h-2.5 rounded-full bg-red-600 border border-white animate-pulse" />
+                <span className="text-[6.5px] font-bold text-red-400 font-mono">Кордон РФ</span>
+              </div>
+            </>
+          ) : selectedCity === 'moscow' ? (
+            <>
+              {/* Garden Ring Road Circle */}
+              <div className="absolute inset-3 rounded-full border-2 border-slate-600/60 pointer-events-none" />
+              {/* Red Square (Center) */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                <div className="w-3 h-3 rounded-full bg-red-600 border border-amber-300 animate-pulse" />
+                <span className="text-[6px] font-bold text-red-300 font-mono">Кремль</span>
+              </div>
+              {/* DPS Post (East) */}
+              <div className="absolute top-[40%] right-2 flex items-center gap-0.5">
+                <div className="w-2 h-2 rounded-full bg-blue-500 border border-white" />
+                <span className="text-[5.5px] text-blue-300 font-mono">ДПС</span>
+              </div>
+              {/* Kyiv Station / Return to Kyiv (West) */}
+              <div className="absolute bottom-3 left-2 flex items-center gap-0.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-yellow-400 border border-white animate-pulse" />
+                <span className="text-[5.5px] text-yellow-300 font-mono">Київ.вокзал</span>
+              </div>
+              {/* Moscow City (North-East) */}
+              <div className="absolute top-2 right-4 flex items-center gap-0.5">
+                <div className="w-2 h-2 rounded-full bg-cyan-400 border border-white" />
+                <span className="text-[5.5px] text-cyan-200 font-mono">Сіті</span>
+              </div>
+            </>
+          ) : selectedCity === 'kyiv' ? (
             <>
               {/* Dnipro River on the East */}
               <div className="absolute top-0 right-0 w-8 h-full bg-cyan-700/60" />
@@ -4245,6 +4814,21 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
               >
                 <span>🎮 [0]</span>
               </button>
+
+              {/* DPS Wand (Traffic Police) */}
+              {(isDps || ownedWeapons.includes('dps_wand')) && (
+                <button
+                  onClick={() => handleEquipWeapon('dps_wand')}
+                  className={`px-2.5 h-10 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1 ${
+                    equippedWeapon === 'dps_wand'
+                      ? 'bg-blue-500 text-white shadow-md font-black ring-2 ring-blue-300'
+                      : 'bg-slate-900 text-blue-300 hover:text-blue-200'
+                  }`}
+                  title="Жезл ДПС [Q] — Зупинка порушників на узбіччі та штраф +₴1,000"
+                >
+                  <span>🚦 Жезл</span>
+                </button>
+              )}
             </div>
           )}
 
@@ -4271,6 +4855,8 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
                   ? 'bg-gradient-to-r from-yellow-600 to-amber-800 border-yellow-300 shadow-yellow-500/40 text-slate-950'
                   : equippedWeapon === 'drone'
                   ? 'bg-gradient-to-r from-cyan-600 to-blue-700 border-cyan-300 shadow-cyan-500/40 text-white'
+                  : equippedWeapon === 'dps_wand'
+                  ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 border-blue-300 shadow-blue-500/50 text-white'
                   : 'bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 border-red-400 shadow-red-500/40'
               }`}
               title="Атакувати або використати спорядження (Q або ЛКМ)"
@@ -4294,6 +4880,8 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
                   ? '🚀'
                   : equippedWeapon === 'drone'
                   ? '🎮'
+                  : equippedWeapon === 'dps_wand'
+                  ? '🚦'
                   : '👊'}
               </span>
               <span>
@@ -4315,13 +4903,15 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
                   ? '[Q] РАКЕТА ППО'
                   : equippedWeapon === 'drone'
                   ? '[Q] СТАРТ FPV'
+                  : equippedWeapon === 'dps_wand'
+                  ? '[Q] ЖЕЗЛ ДПС'
                   : '[Q] УДАР'}
               </span>
             </button>
           )}
 
-          {/* Police Siren & Lights Button (When driving police patrol car) */}
-          {!isHumanOnFoot && isDrivingPoliceCar && (
+          {/* Police / DPS Siren & Lights Button */}
+          {!isHumanOnFoot && (isDrivingPoliceCar || isDrivingDpsCar) && (
             <button
               onClick={handleToggleSiren}
               className={`px-4 h-12 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-lg select-none border ${
