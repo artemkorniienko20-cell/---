@@ -2959,35 +2959,19 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
     setTimeout(() => setCrashBanner(null), 3000);
   };
 
-  // Quick navigation or teleport to DPS Post (Відділ ДПС у Москві)
-  const handleGoToDps = (teleport = true) => {
+  // Quick GPS navigation route to DPS Post (Відділ ДПС у Москві)
+  const handleGoToDps = () => {
     playClickSound();
     if (selectedCity !== 'moscow') {
       handleSelectCity('moscow');
     }
     setCustomRoute([{ x: 35, z: 35, name: '🚨 Відділ ДПС' }]);
-    if (teleport) {
-      setTimeout(() => {
-        if (isHumanOnFootRef.current && humanRef.current) {
-          humanRef.current.spawn(35, 26, 0);
-        } else if (physicsRef.current) {
-          physicsRef.current.resetPosition(35, 18, 0);
-        }
-        setCrashBanner({
-          name: '🚨 ВИ ПРИБУЛИ ДО ВІДДІЛУ ДПС! Натисніть [F] або підійдіть до посту, щоб влаштуватися на службу!',
-          force: 0,
-          isFsd: true
-        });
-        setTimeout(() => setCrashBanner(null), 5000);
-      }, 150);
-    } else {
-      setCrashBanner({
-        name: '📍 Маршрут до Відділу ДПС прокладено в навігаторі! Рухайтесь за високим синім маяком у небі!',
-        force: 0,
-        isFsd: true
-      });
-      setTimeout(() => setCrashBanner(null), 4000);
-    }
+    setCrashBanner({
+      name: '📍 Маршрут до Відділу ДПС прокладено в GPS навігаторі! Рухайтесь за високим синім маяком у небі!',
+      force: 0,
+      isFsd: true
+    });
+    setTimeout(() => setCrashBanner(null), 4000);
   };
 
   // Police / DPS Siren toggle (Key G: Siren & Strobes)
@@ -3375,8 +3359,8 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
               </div>
 
               <div className="p-3 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-1.5 font-mono text-[11px]">
-                <div className="font-bold text-cyan-400 uppercase">Швидкі способи потрапити туди:</div>
-                <div className="text-slate-300">1. Натисніть кнопку <strong>«ТЕЛЕПОРТ У ВІДДІЛ ДПС»</strong> прямо зараз (перемістить негайно).</div>
+                <div className="font-bold text-cyan-400 uppercase">Як дістатися до Відділу ДПС:</div>
+                <div className="text-slate-300">1. Натисніть кнопку <strong>«ПРОКЛАСТИ МАРШРУТ У GPS»</strong> нижче (ввімкне навігатор).</div>
                 <div className="text-slate-300">2. Або оберіть місто <strong>[🇷🇺 Москва]</strong> у верхньому селекторі міст.</div>
                 <div className="text-slate-300">3. Або прорвіться з передової <strong>«Фронт»</strong> (для бійців ЗСУ) по трасі до кордону [F].</div>
               </div>
@@ -3392,12 +3376,12 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
               <button
                 onClick={() => {
                   setShowDpsGuide(false);
-                  handleGoToDps(true);
+                  handleGoToDps();
                 }}
                 className="px-5 py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-400 text-white font-black text-xs rounded-xl shadow-lg shadow-blue-500/40 transition-all flex items-center gap-2 cursor-pointer"
               >
-                <span>⚡</span>
-                <span>ТЕЛЕПОРТ У ВІДДІЛ ДПС</span>
+                <span>📍</span>
+                <span>ПРОКЛАСТИ МАРШРУТ У GPS</span>
               </button>
             </div>
           </div>
@@ -3808,19 +3792,12 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
           </div>
           <div className="flex items-center gap-1.5 ml-1">
             <button
-              onClick={() => handleGoToDps(false)}
-              className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/40 rounded-lg text-[10px] font-bold transition-all cursor-pointer"
+              onClick={() => handleGoToDps()}
+              className="px-2.5 py-1 bg-blue-600/90 hover:bg-blue-500 text-white border border-blue-400/50 rounded-lg text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1 shadow-md"
               title="Прокласти маршрут в GPS навігаторі"
             >
-              📍 Маршрут
-            </button>
-            <button
-              onClick={() => handleGoToDps(true)}
-              className="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-[10px] shadow-md transition-all flex items-center gap-1 cursor-pointer"
-              title="Миттєвий перехід прямо до дверей відділу ДПС"
-            >
-              <span>⚡</span>
-              <span>Телепорт</span>
+              <span>📍</span>
+              <span>Маршрут в GPS</span>
             </button>
           </div>
         </div>
@@ -4035,13 +4012,13 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
             <button
               onClick={() => {
                 if (selectedCity === 'moscow') {
-                  handleGoToDps(true);
+                  handleGoToDps();
                 } else {
                   setShowDpsGuide(true);
                 }
               }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600/90 hover:bg-blue-500 text-white font-black shadow-md shadow-blue-500/30 border border-blue-400/80 transition-all cursor-pointer"
-              title="Знайти Відділ ДПС: точні координати, маршрут або швидкий перехід"
+              title="Прокласти маршрут в GPS до Відділу ДПС"
             >
               <span className="animate-pulse">🚨</span>
               <span>ВІДДІЛ ДПС</span>
