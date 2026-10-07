@@ -77,19 +77,24 @@ export function MultiplayerModal({
     playClickSound();
     setIsConnecting(true);
     const targetCity = cityPreset || selectedCity;
-    if (cityPreset && onSelectCity) {
-      onSelectCity(cityPreset);
+    if (onSelectCity) {
+      onSelectCity(targetCity, true);
     }
     const defaultCode = 'UA-' + getCityCode(targetCity) + '-1';
     await multiplayerManager.hostRoom(defaultCode, targetCity);
     setIsConnecting(false);
+    onClose();
   };
 
   const handleHostRoom = async () => {
     playClickSound();
     setIsConnecting(true);
+    if (onSelectCity) {
+      onSelectCity(selectedCity, true);
+    }
     await multiplayerManager.hostRoom(hostCodeInput, selectedCity);
     setIsConnecting(false);
+    onClose();
   };
 
   const handleJoinRoom = async () => {
@@ -98,6 +103,7 @@ export function MultiplayerModal({
     setIsConnecting(true);
     await multiplayerManager.joinRoom(joinCodeInput.trim());
     setIsConnecting(false);
+    onClose();
   };
 
   const handleDisconnect = () => {
@@ -297,7 +303,13 @@ export function MultiplayerModal({
                       Столиця України: Майдан Незалежності, Золоті Ворота, Дніпро, патрулі 102 та блокпости ЗСУ.
                     </p>
                   </div>
-                  <button className="mt-4 w-full py-2 bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-black text-xs rounded-xl shadow-md cursor-pointer">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleQuickPlay('kyiv');
+                    }}
+                    className="mt-4 w-full py-2 bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-black text-xs rounded-xl shadow-md cursor-pointer"
+                  >
                     УВІЙТИ В КИЇВ
                   </button>
                 </div>
@@ -318,7 +330,13 @@ export function MultiplayerModal({
                       вул. Соборна, водонапірна Вежа, Фонтан Roshen, Центральний міст, супермаркети.
                     </p>
                   </div>
-                  <button className="mt-4 w-full py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs rounded-xl shadow-md cursor-pointer">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleQuickPlay('vinnytsia');
+                    }}
+                    className="mt-4 w-full py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs rounded-xl shadow-md cursor-pointer"
+                  >
                     УВІЙТИ У ВІННИЦЮ
                   </button>
                 </div>
@@ -339,7 +357,13 @@ export function MultiplayerModal({
                       ДніпроГЕС, о. Хортиця, пр. Соборний, швидкісні шосе, дрифт та нічні рейси.
                     </p>
                   </div>
-                  <button className="mt-4 w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-md cursor-pointer">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleQuickPlay('zaporizhzhia');
+                    }}
+                    className="mt-4 w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-md cursor-pointer"
+                  >
                     УВІЙТИ В ЗАПОРІЖЖЯ
                   </button>
                 </div>
@@ -360,7 +384,13 @@ export function MultiplayerModal({
                       Зона бойових дій: окопи, бункер ЗСУ «Скеля», танки Т-64БВ, спалена техніка РФ, 28+ окупантів, прорив на Москву.
                     </p>
                   </div>
-                  <button className="mt-4 w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-md cursor-pointer">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleQuickPlay('frontline');
+                    }}
+                    className="mt-4 w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-md cursor-pointer"
+                  >
                     УВІЙТИ НА ФРОНТ
                   </button>
                 </div>
@@ -381,7 +411,13 @@ export function MultiplayerModal({
                       Столиця РФ: Красна площа, Спаська вежа, хмарочоси Москва-Сіті, служба в ДПС (жезл, штрафи), Київський вокзал.
                     </p>
                   </div>
-                  <button className="mt-4 w-full py-2 bg-rose-600 hover:bg-rose-500 text-white font-black text-xs rounded-xl shadow-md cursor-pointer">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleQuickPlay('moscow');
+                    }}
+                    className="mt-4 w-full py-2 bg-rose-600 hover:bg-rose-500 text-white font-black text-xs rounded-xl shadow-md cursor-pointer"
+                  >
                     УВІЙТИ В МОСКВУ
                   </button>
                 </div>

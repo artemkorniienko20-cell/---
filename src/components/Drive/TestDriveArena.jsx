@@ -2383,19 +2383,32 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
   };
 
   // City Switcher (Kyiv / Vinnytsia / Zaporizhzhia / Frontline / Moscow)
-  const handleSelectCity = (cityId) => {
-    if (cityId === selectedCity) return;
-
-    // Frontline is strictly restricted to Armed Forces of Ukraine (ЗСУ) personnel
-    if (cityId === 'frontline' && !isArmyRef.current && !isArmy) {
-      playAccessDeniedSound();
+  const handleSelectCity = (cityId, forceReload = false) => {
+    if (cityId === selectedCity && !forceReload) {
       setCrashBanner({
-        name: '⛔ ДОСТУП ЗАБОРОНЕНО! Зона бойових дій «Фронт» доступна тільки для армії ЗСУ! 🔒 Вступіть до ЗСУ!',
+        name: `📍 Ви вже знаходитесь у локації: ${
+          cityId === 'kyiv'
+            ? 'Київ 🏛️'
+            : cityId === 'vinnytsia'
+            ? 'Вінниця 🏙️'
+            : cityId === 'zaporizhzhia'
+            ? 'Запоріжжя ⚡'
+            : cityId === 'frontline'
+            ? 'Фронт 🪖'
+            : 'Москва 🇷🇺'
+        }!`,
         force: 0,
         isFsd: true
       });
-      setTimeout(() => setCrashBanner(null), 4000);
+      setTimeout(() => setCrashBanner(null), 2500);
       return;
+    }
+
+    // Auto-enlist into ZSU if selecting frontline so player can always enter without restriction
+    if (cityId === 'frontline') {
+      if (!isArmyRef.current && !isArmy) {
+        handleEnlistArmy();
+      }
     }
 
     playClickSound();
@@ -2535,10 +2548,18 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
       }
 
       // If human character was out, despawn and return inside car
-      if (humanRef.current && isHumanOnFoot) {
+      if (humanRef.current) {
         humanRef.current.despawn();
-        setIsHumanOnFoot(false);
-        setCanEnterCar(false);
+      }
+      setIsHumanOnFoot(false);
+      isHumanOnFootRef.current = false;
+      setCanEnterCar(false);
+
+      if (carBuilderRef.current?.carGroup && physicsRef.current) {
+        carBuilderRef.current.carGroup.visible = true;
+        carBuilderRef.current.carGroup.scale.set(1, 1, 1);
+        carBuilderRef.current.carGroup.position.set(physicsRef.current.x, 0, physicsRef.current.z);
+        carBuilderRef.current.carGroup.rotation.y = physicsRef.current.yaw;
       }
 
       setTimeout(() => setCrashBanner(null), 3500);
@@ -3934,25 +3955,25 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
       )}
 
       {/* ================= TOP HUD: LOCATION & ACTION BAR ================= */}
-      <div className="relative z-20 flex items-center justify-between p-4 bg-gradient-to-b from-black/85 to-transparent">
-        <div className="flex items-center gap-3">
+      <div className="relative z-20 flex flex-wrap items-center justify-between p-3 gap-2 bg-gradient-to-b from-black/85 to-transparent">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => {
               playClickSound();
               dynamicAudio.stop();
               onExitDrive();
             }}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-white font-bold text-xs border border-slate-700 shadow-xl transition-all"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-white font-bold text-xs border border-slate-700 shadow-xl transition-all cursor-pointer"
           >
             <ArrowLeft size={16} />
             Повернутися до тюнінгу
           </button>
 
           {/* City Selector Pill */}
-          <div className="flex items-center gap-1 bg-slate-950/95 p-1 rounded-xl border border-cyan-500/50 shadow-xl text-xs font-mono font-bold">
+          <div className="flex flex-wrap items-center gap-1 bg-slate-950/95 p-1 rounded-xl border border-cyan-500/50 shadow-xl text-xs font-mono font-bold">
             <button
-              onClick={() => handleSelectCity('kyiv')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+              onClick={() => handleSelectCity('kyiv', true)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                 selectedCity === 'kyiv'
                   ? 'bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 text-slate-950 font-black shadow-md shadow-yellow-500/40'
                   : 'text-slate-400 hover:text-white'
@@ -3963,8 +3984,8 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
               <span>Київ 🏛️</span>
             </button>
             <button
-              onClick={() => handleSelectCity('vinnytsia')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+              onClick={() => handleSelectCity('vinnytsia', true)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                 selectedCity === 'vinnytsia'
                   ? 'bg-cyan-500 text-slate-950 font-black shadow-md shadow-cyan-500/40'
                   : 'text-slate-400 hover:text-white'
@@ -3975,8 +3996,8 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
               <span>Вінниця 🏙️</span>
             </button>
             <button
-              onClick={() => handleSelectCity('zaporizhzhia')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+              onClick={() => handleSelectCity('zaporizhzhia', true)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                 selectedCity === 'zaporizhzhia'
                   ? 'bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/40'
                   : 'text-slate-400 hover:text-white'
@@ -3988,24 +4009,22 @@ export default function TestDriveArena({ carConfig, onExitDrive }) {
             </button>
             {/* Frontline (Strictly ZSU Only) */}
             <button
-              onClick={() => handleSelectCity('frontline')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+              onClick={() => handleSelectCity('frontline', true)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                 selectedCity === 'frontline'
                   ? 'bg-gradient-to-r from-emerald-600 via-green-600 to-emerald-700 text-white font-black shadow-md shadow-emerald-600/40'
-                  : isArmy
-                  ? 'text-emerald-400 hover:text-white'
-                  : 'text-slate-500 hover:text-slate-400 opacity-75'
+                  : 'text-emerald-400 hover:text-white'
               }`}
-              title={isArmy ? 'Перейти на Фронт (Передова, Окопи, Танки, Спалена техніка РФ)' : 'Фронт (Тільки для армії ЗСУ! 🔒 Вступіть до ЗСУ)'}
+              title="Перейти на Фронт (Передова, Окопи, Танки, Спалена техніка РФ)"
             >
-              <span>{isArmy ? '🪖' : '🔒'}</span>
+              <span>🪖</span>
               <span>Фронт (ЗСУ)</span>
             </button>
 
             {/* Moscow (Capital of RF, DPS post, Return to Kyiv) */}
             <button
-              onClick={() => handleSelectCity('moscow')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+              onClick={() => handleSelectCity('moscow', true)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                 selectedCity === 'moscow'
                   ? 'bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white font-black shadow-md shadow-red-600/40'
                   : 'text-slate-400 hover:text-white'

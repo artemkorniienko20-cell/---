@@ -1386,7 +1386,7 @@ export function setupCityAmenities(scene, cityId, colliders) {
       z: -180,
       rotY: -Math.PI / 2
     }, colliders);
-  } else {
+  } else if (cityId === 'vinnytsia') {
     // Vinnytsia Amenities
     // 1. АТБ-Маркет near European Square (X: 35, Z: -38)
     supermarkets.push(buildSupermarket(scene, {
@@ -1491,6 +1491,70 @@ export function setupCityAmenities(scene, cityId, colliders) {
       z: 80,
       rotY: 0
     }, colliders);
+  } else if (cityId === 'frontline') {
+    // Frontline Field Amenities:
+    // 1. Польова кухня ЗСУ (Харчування)
+    supermarkets.push(buildSupermarket(scene, {
+      id: 'kitchen_frontline',
+      name: 'Польова Кухня ЗСУ • Сектор оборони',
+      brand: 'atb',
+      x: -25,
+      z: 120,
+      rotY: 0
+    }, colliders));
+
+    // 2. Склад Боєприпасів та Зброї ЗСУ
+    gunShops.push(buildGunShop(scene, {
+      id: 'armory_frontline',
+      name: 'Склад Зброї та Боєкомплекту ЗСУ',
+      x: -45,
+      z: 120,
+      rotY: 0
+    }, colliders));
+
+    // 3. Штаб ЗСУ «Скеля»
+    militaryBase = buildMilitaryBase(scene, {
+      id: 'military_base_frontline',
+      name: 'Штаб передової лінії оборони ЗСУ',
+      x: -35,
+      z: 140,
+      rotY: 0
+    }, colliders);
+  } else if (cityId === 'moscow') {
+    // Moscow Amenities:
+    // 1. Супермаркет 24/7 (Садове кільце)
+    supermarkets.push(buildSupermarket(scene, {
+      id: 'supermarket_moscow',
+      name: 'Супермаркет 24/7 (Садове кільце)',
+      brand: 'silpo',
+      x: 25,
+      z: -50,
+      rotY: -Math.PI / 2
+    }, colliders));
+
+    // 2. Готель «Москва-Сіті»
+    housingProperties.push(buildHousingProperty(scene, {
+      id: 'moscow_hotel',
+      type: 'apartment',
+      title: 'Апартаменти «Москва-Сіті»',
+      address: 'Пресненська набережна, 12',
+      price: 100,
+      desc: 'Преміальні апартаменти в скляному хмарочосі.',
+      x: 100,
+      z: -40,
+      rotY: 0
+    }, colliders));
+
+    // 3. Паркінг біля Красної площі
+    parkingHubs.push(buildParkingLot(scene, {
+      name: 'Паркінг біля Красної площі',
+      x: -30,
+      z: -40,
+      width: 28,
+      depth: 16,
+      spacesCount: 10,
+      rotY: 0
+    }, colliders));
   }
 
   return {
