@@ -365,7 +365,13 @@ class RemotePlayerEntity {
     }
   }
 
-  update(dt) {
+  update(dt, currentCity = null) {
+    if (currentCity && this.city && this.city !== currentCity) {
+      this.root.visible = false;
+      return;
+    }
+    this.root.visible = true;
+
     // 1. Smooth position interpolation (Lerp)
     this.currentPos.lerp(this.targetPos, Math.min(1.0, dt * 14));
     this.root.position.copy(this.currentPos);
@@ -410,15 +416,17 @@ class RemotePlayerEntity {
 
 /**
  * RemotePlayerRenderer
- * Coordinates all remote players in the 3D world
+ * Coordinates all remote players in the 3D world across all cities
  */
 export class RemotePlayerRenderer {
   constructor(scene) {
     this.scene = scene;
     this.players = new Map(); // id -> RemotePlayerEntity
+    this.currentCity = 'kyiv';
   }
 
-  syncPlayers(remotePlayersMap) {
+  syncPlayers(remotePlayersMap, currentCity = null) {
+    if (currentCity) this.currentCity = currentCity;
     const currentIds = new Set(remotePlayersMap.keys());
 
     // 1. Remove disconnected players
@@ -438,6 +446,9 @@ export class RemotePlayerRenderer {
       } else {
         entity.updateData(playerData);
       }
+      if (playerData.city) {
+        entity.city = playerData.city;
+      }
     });
   }
 
@@ -448,9 +459,10 @@ export class RemotePlayerRenderer {
     }
   }
 
-  update(dt) {
+  update(dt, currentCity = null) {
+    const city = currentCity || this.currentCity;
     this.players.forEach(entity => {
-      entity.update(dt);
+      entity.update(dt, city);
     });
   }
 

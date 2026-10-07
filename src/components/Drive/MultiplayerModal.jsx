@@ -24,6 +24,7 @@ export function MultiplayerModal({
   multiplayerManager,
   isPolice,
   isArmy,
+  isDps,
   selectedCity,
   onSelectCity,
   connectedPlayersCount = 1,
@@ -31,11 +32,33 @@ export function MultiplayerModal({
 }) {
   if (!isOpen || !multiplayerManager) return null;
 
-  const [activeTab, setActiveTab] = useState('quick'); // 'quick' | 'host' | 'join' | 'profile'
+  const getCityCode = (c) => {
+    switch (c) {
+      case 'kyiv': return 'KYIV';
+      case 'zaporizhzhia': return 'ZP';
+      case 'vinnytsia': return 'VIN';
+      case 'frontline': return 'FRONT';
+      case 'moscow': return 'MSK';
+      default: return 'UA';
+    }
+  };
+
+  const formatCityName = (c) => {
+    switch (c) {
+      case 'kyiv': return 'Київ 🏛️';
+      case 'vinnytsia': return 'Вінниця 🏙️';
+      case 'zaporizhzhia': return 'Запоріжжя ⚡';
+      case 'frontline': return 'Фронт 🪖';
+      case 'moscow': return 'Москва 🇷🇺';
+      default: return 'Київ 🏛️';
+    }
+  };
+
+  const [activeTab, setActiveTab] = useState('quick'); // 'quick' | 'host' | 'join' | 'players'
   const [nicknameInput, setNicknameInput] = useState(multiplayerManager.nickname || '');
   const [joinCodeInput, setJoinCodeInput] = useState('');
   const [hostCodeInput, setHostCodeInput] = useState(
-    'UA-' + (selectedCity === 'kyiv' ? 'KYIV' : selectedCity === 'zaporizhzhia' ? 'ZP' : 'VIN') + '-' + Math.floor(100 + Math.random() * 900)
+    'UA-' + getCityCode(selectedCity) + '-' + Math.floor(100 + Math.random() * 900)
   );
   const [copied, setCopied] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -53,11 +76,12 @@ export function MultiplayerModal({
   const handleQuickPlay = async (cityPreset = null) => {
     playClickSound();
     setIsConnecting(true);
+    const targetCity = cityPreset || selectedCity;
     if (cityPreset && onSelectCity) {
       onSelectCity(cityPreset);
     }
-    const defaultCode = 'UA-' + (cityPreset || selectedCity).toUpperCase() + '-1';
-    await multiplayerManager.hostRoom(defaultCode, cityPreset || selectedCity);
+    const defaultCode = 'UA-' + getCityCode(targetCity) + '-1';
+    await multiplayerManager.hostRoom(defaultCode, targetCity);
     setIsConnecting(false);
   };
 
@@ -156,10 +180,12 @@ export function MultiplayerModal({
                   ? 'bg-emerald-950 border border-yellow-400 text-yellow-300'
                   : isPolice
                   ? 'bg-blue-950 border border-blue-400 text-blue-300'
+                  : isDps
+                  ? 'bg-indigo-950 border border-cyan-400 text-cyan-300'
                   : 'bg-slate-900 border border-slate-700 text-slate-300'
               }`}
             >
-              {isArmy ? '🪖 ЗСУ ППО' : isPolice ? '👮 ПОЛІЦІЯ 102' : '👤 ЦИВІЛЬНИЙ'}
+              {isArmy ? '🪖 ЗСУ ППО' : isPolice ? '👮 ПОЛІЦІЯ 102' : isDps ? '🚨 ДПС ІНСПЕКЦІЯ' : '👤 ЦИВІЛЬНИЙ'}
             </span>
           </div>
         </div>
@@ -168,7 +194,7 @@ export function MultiplayerModal({
         <div className="flex border-b border-slate-800 bg-slate-950 px-5 pt-3 gap-2">
           <button
             onClick={() => setActiveTab('quick')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-black text-xs transition-all ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-black text-xs transition-all cursor-pointer ${
               activeTab === 'quick'
                 ? 'bg-cyan-500 text-slate-950 shadow-md'
                 : 'text-slate-400 hover:text-white hover:bg-slate-900'
@@ -179,7 +205,7 @@ export function MultiplayerModal({
           </button>
           <button
             onClick={() => setActiveTab('host')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-black text-xs transition-all ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-black text-xs transition-all cursor-pointer ${
               activeTab === 'host'
                 ? 'bg-cyan-500 text-slate-950 shadow-md'
                 : 'text-slate-400 hover:text-white hover:bg-slate-900'
@@ -190,7 +216,7 @@ export function MultiplayerModal({
           </button>
           <button
             onClick={() => setActiveTab('join')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-black text-xs transition-all ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-black text-xs transition-all cursor-pointer ${
               activeTab === 'join'
                 ? 'bg-cyan-500 text-slate-950 shadow-md'
                 : 'text-slate-400 hover:text-white hover:bg-slate-900'
@@ -201,7 +227,7 @@ export function MultiplayerModal({
           </button>
           <button
             onClick={() => setActiveTab('players')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-black text-xs transition-all ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-black text-xs transition-all cursor-pointer ${
               activeTab === 'players'
                 ? 'bg-cyan-500 text-slate-950 shadow-md'
                 : 'text-slate-400 hover:text-white hover:bg-slate-900'
@@ -213,7 +239,7 @@ export function MultiplayerModal({
         </div>
 
         {/* Body Content */}
-        <div className="p-6 overflow-y-auto max-h-[380px] flex flex-col gap-4">
+        <div className="p-6 overflow-y-auto max-h-[420px] flex flex-col gap-4">
           {/* Active Room Banner if connected */}
           {isOnline && (
             <div className="bg-gradient-to-r from-emerald-950/80 via-slate-900 to-slate-950 border border-emerald-500/50 p-4 rounded-2xl flex items-center justify-between shadow-lg">
@@ -223,13 +249,13 @@ export function MultiplayerModal({
                 </div>
                 <div>
                   <div className="text-xs font-mono text-emerald-400 font-bold uppercase">
-                    АКТИВНА СЕСІЯ: {multiplayerManager.isHost ? '👑 ХОСТ' : '🔗 КЛІЄНТ'}
+                    АКТИВНА СЕСІЯ: {multiplayerManager.isHost ? '👑 ХОСТ' : '🔗 КЛІЄНТ'} • {formatCityName(selectedCity)}
                   </div>
                   <div className="text-base font-black text-white flex items-center gap-2">
                     <span>Кімната: «{multiplayerManager.roomCode}»</span>
                     <button
                       onClick={handleCopyCode}
-                      className="p-1 text-slate-400 hover:text-white transition-colors"
+                      className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer"
                       title="Копіювати код кімнати"
                     >
                       {copied ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
@@ -239,7 +265,7 @@ export function MultiplayerModal({
               </div>
               <button
                 onClick={handleDisconnect}
-                className="flex items-center gap-1.5 px-3 py-2 bg-red-600/80 hover:bg-red-600 text-white font-bold text-xs rounded-xl transition-all shadow-md"
+                className="flex items-center gap-1.5 px-3 py-2 bg-red-600/80 hover:bg-red-600 text-white font-bold text-xs rounded-xl transition-all shadow-md cursor-pointer"
               >
                 <LogOut size={14} />
                 <span>Відключитися</span>
@@ -247,19 +273,20 @@ export function MultiplayerModal({
             </div>
           )}
 
-          {/* TAB 1: Quick Play */}
+          {/* TAB 1: Quick Play (Всі 5 міст і локацій) */}
           {activeTab === 'quick' && (
             <div className="flex flex-col gap-4">
               <div className="text-xs text-slate-300 leading-relaxed bg-slate-900/60 p-3.5 rounded-xl border border-slate-800">
-                🚀 <span className="font-bold text-white">Миттєве підключення</span>: оберіть місто для автоматичного входу. Працює як для гри з друзями по мережі, так і для перевірки в декількох вкладках або вікнах браузера!
+                🚀 <span className="font-bold text-white">Миттєве підключення до будь-якого міста</span>: оберіть місто для автоматичного входу. Мультиплеєр працює на всіх 5 локаціях як для гри з друзями по мережі, так і у вкладках браузера!
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {/* 1. КИЇВ */}
                 <div
                   onClick={() => handleQuickPlay('kyiv')}
                   className={`p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between group hover:scale-[1.02] ${
                     selectedCity === 'kyiv' && isOnline
-                      ? 'bg-yellow-950/50 border-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.3)]'
+                      ? 'bg-yellow-950/60 border-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.3)]'
                       : 'bg-slate-900/70 border-slate-800 hover:border-yellow-400'
                   }`}
                 >
@@ -267,19 +294,20 @@ export function MultiplayerModal({
                     <span className="text-2xl">🏛️</span>
                     <h3 className="text-sm font-black text-white mt-2">Київ (Хрещатик)</h3>
                     <p className="text-[11px] text-slate-400 mt-1">
-                      Столиця: Майдан, Золоті Ворота, Дніпро, патрулі 102 та блокпости ЗСУ.
+                      Столиця України: Майдан Незалежності, Золоті Ворота, Дніпро, патрулі 102 та блокпости ЗСУ.
                     </p>
                   </div>
-                  <button className="mt-4 w-full py-2 bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-black text-xs rounded-xl shadow-md">
+                  <button className="mt-4 w-full py-2 bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-black text-xs rounded-xl shadow-md cursor-pointer">
                     УВІЙТИ В КИЇВ
                   </button>
                 </div>
 
+                {/* 2. ВІННИЦЯ */}
                 <div
                   onClick={() => handleQuickPlay('vinnytsia')}
                   className={`p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between group hover:scale-[1.02] ${
                     selectedCity === 'vinnytsia' && isOnline
-                      ? 'bg-cyan-950/50 border-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.3)]'
+                      ? 'bg-cyan-950/60 border-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.3)]'
                       : 'bg-slate-900/70 border-slate-800 hover:border-cyan-400'
                   }`}
                 >
@@ -287,19 +315,20 @@ export function MultiplayerModal({
                     <span className="text-2xl">🏙️</span>
                     <h3 className="text-sm font-black text-white mt-2">Вінниця (Вежа)</h3>
                     <p className="text-[11px] text-slate-400 mt-1">
-                      вул. Соборна, Фонтан Roshen, Центральний міст, супермаркети.
+                      вул. Соборна, водонапірна Вежа, Фонтан Roshen, Центральний міст, супермаркети.
                     </p>
                   </div>
-                  <button className="mt-4 w-full py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs rounded-xl shadow-md">
+                  <button className="mt-4 w-full py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs rounded-xl shadow-md cursor-pointer">
                     УВІЙТИ У ВІННИЦЮ
                   </button>
                 </div>
 
+                {/* 3. ЗАПОРІЖЖЯ */}
                 <div
                   onClick={() => handleQuickPlay('zaporizhzhia')}
                   className={`p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between group hover:scale-[1.02] ${
                     selectedCity === 'zaporizhzhia' && isOnline
-                      ? 'bg-amber-950/50 border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.3)]'
+                      ? 'bg-amber-950/60 border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.3)]'
                       : 'bg-slate-900/70 border-slate-800 hover:border-amber-400'
                   }`}
                 >
@@ -307,11 +336,53 @@ export function MultiplayerModal({
                     <span className="text-2xl">⚡</span>
                     <h3 className="text-sm font-black text-white mt-2">Запоріжжя (ГЕС)</h3>
                     <p className="text-[11px] text-slate-400 mt-1">
-                      ДніпроГЕС, о. Хортиця, пр. Соборний, швидкісні траси та дрифт.
+                      ДніпроГЕС, о. Хортиця, пр. Соборний, швидкісні шосе, дрифт та нічні рейси.
                     </p>
                   </div>
-                  <button className="mt-4 w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-md">
+                  <button className="mt-4 w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-md cursor-pointer">
                     УВІЙТИ В ЗАПОРІЖЖЯ
+                  </button>
+                </div>
+
+                {/* 4. ФРОНТ (ЗСУ) */}
+                <div
+                  onClick={() => handleQuickPlay('frontline')}
+                  className={`p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between group hover:scale-[1.02] ${
+                    selectedCity === 'frontline' && isOnline
+                      ? 'bg-emerald-950/80 border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.4)]'
+                      : 'bg-slate-900/70 border-slate-800 hover:border-emerald-500'
+                  }`}
+                >
+                  <div>
+                    <span className="text-2xl">🪖</span>
+                    <h3 className="text-sm font-black text-emerald-300 mt-2">Фронт (ЗСУ)</h3>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Зона бойових дій: окопи, бункер ЗСУ «Скеля», танки Т-64БВ, спалена техніка РФ, 28+ окупантів, прорив на Москву.
+                    </p>
+                  </div>
+                  <button className="mt-4 w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-md cursor-pointer">
+                    УВІЙТИ НА ФРОНТ
+                  </button>
+                </div>
+
+                {/* 5. МОСКВА */}
+                <div
+                  onClick={() => handleQuickPlay('moscow')}
+                  className={`p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between group hover:scale-[1.02] ${
+                    selectedCity === 'moscow' && isOnline
+                      ? 'bg-red-950/80 border-rose-500 shadow-[0_0_20px_rgba(239,68,68,0.4)]'
+                      : 'bg-slate-900/70 border-slate-800 hover:border-red-500'
+                  }`}
+                >
+                  <div>
+                    <span className="text-2xl">🇷🇺</span>
+                    <h3 className="text-sm font-black text-rose-300 mt-2">Москва (Кремль)</h3>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Столиця РФ: Красна площа, Спаська вежа, хмарочоси Москва-Сіті, служба в ДПС (жезл, штрафи), Київський вокзал.
+                    </p>
+                  </div>
+                  <button className="mt-4 w-full py-2 bg-rose-600 hover:bg-rose-500 text-white font-black text-xs rounded-xl shadow-md cursor-pointer">
+                    УВІЙТИ В МОСКВУ
                   </button>
                 </div>
               </div>
@@ -335,10 +406,10 @@ export function MultiplayerModal({
                   <button
                     onClick={() =>
                       setHostCodeInput(
-                        'UA-' + (selectedCity === 'kyiv' ? 'KYIV' : selectedCity === 'zaporizhzhia' ? 'ZP' : 'VIN') + '-' + Math.floor(100 + Math.random() * 900)
+                        'UA-' + getCityCode(selectedCity) + '-' + Math.floor(100 + Math.random() * 900)
                       )
                     }
-                    className="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl"
+                    className="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl cursor-pointer"
                   >
                     Випадковий
                   </button>
@@ -346,40 +417,77 @@ export function MultiplayerModal({
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-mono font-bold text-slate-400">ОБЕРІТЬ МІСТО ДЛЯ ГРИ:</label>
-                <div className="grid grid-cols-3 gap-2">
+                <label className="text-xs font-mono font-bold text-slate-400">ОБЕРІТЬ МІСТО ДЛЯ ГРИ (ВСІ 5 ЛОКАЦІЙ):</label>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                   <button
                     type="button"
-                    onClick={() => onSelectCity && onSelectCity('kyiv')}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all ${
+                    onClick={() => {
+                      if (onSelectCity) onSelectCity('kyiv');
+                      setHostCodeInput('UA-KYIV-' + Math.floor(100 + Math.random() * 900));
+                    }}
+                    className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                       selectedCity === 'kyiv'
                         ? 'bg-yellow-500 text-slate-950 border-yellow-300 font-black'
-                        : 'bg-slate-900 text-slate-300 border-slate-800'
+                        : 'bg-slate-900 text-slate-300 border-slate-800 hover:border-yellow-400'
                     }`}
                   >
                     Київ 🏛️
                   </button>
                   <button
                     type="button"
-                    onClick={() => onSelectCity && onSelectCity('vinnytsia')}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all ${
+                    onClick={() => {
+                      if (onSelectCity) onSelectCity('vinnytsia');
+                      setHostCodeInput('UA-VIN-' + Math.floor(100 + Math.random() * 900));
+                    }}
+                    className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                       selectedCity === 'vinnytsia'
                         ? 'bg-cyan-500 text-slate-950 border-cyan-300 font-black'
-                        : 'bg-slate-900 text-slate-300 border-slate-800'
+                        : 'bg-slate-900 text-slate-300 border-slate-800 hover:border-cyan-400'
                     }`}
                   >
                     Вінниця 🏙️
                   </button>
                   <button
                     type="button"
-                    onClick={() => onSelectCity && onSelectCity('zaporizhzhia')}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all ${
+                    onClick={() => {
+                      if (onSelectCity) onSelectCity('zaporizhzhia');
+                      setHostCodeInput('UA-ZP-' + Math.floor(100 + Math.random() * 900));
+                    }}
+                    className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                       selectedCity === 'zaporizhzhia'
                         ? 'bg-amber-500 text-slate-950 border-amber-300 font-black'
-                        : 'bg-slate-900 text-slate-300 border-slate-800'
+                        : 'bg-slate-900 text-slate-300 border-slate-800 hover:border-amber-400'
                     }`}
                   >
                     Запоріжжя ⚡
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onSelectCity) onSelectCity('frontline');
+                      setHostCodeInput('UA-FRONT-' + Math.floor(100 + Math.random() * 900));
+                    }}
+                    className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                      selectedCity === 'frontline'
+                        ? 'bg-emerald-600 text-white border-emerald-300 font-black'
+                        : 'bg-slate-900 text-slate-300 border-slate-800 hover:border-emerald-400'
+                    }`}
+                  >
+                    Фронт 🪖
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onSelectCity) onSelectCity('moscow');
+                      setHostCodeInput('UA-MSK-' + Math.floor(100 + Math.random() * 900));
+                    }}
+                    className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                      selectedCity === 'moscow'
+                        ? 'bg-rose-600 text-white border-rose-300 font-black'
+                        : 'bg-slate-900 text-slate-300 border-slate-800 hover:border-rose-400'
+                    }`}
+                  >
+                    Москва 🇷🇺
                   </button>
                 </div>
               </div>
@@ -387,7 +495,7 @@ export function MultiplayerModal({
               <button
                 onClick={handleHostRoom}
                 disabled={isConnecting}
-                className="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-sm rounded-xl shadow-lg shadow-cyan-500/30 flex items-center justify-center gap-2"
+                className="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-sm rounded-xl shadow-lg shadow-cyan-500/30 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Plus size={18} />
                 <span>{isConnecting ? 'СТВОРЕННЯ СЕРВЕРА...' : 'СТВОРИТИ КІМНАТУ ТА ЗАПУСТИТИ'}</span>
@@ -404,7 +512,7 @@ export function MultiplayerModal({
                   type="text"
                   value={joinCodeInput}
                   onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())}
-                  placeholder="Введіть код, наприклад: UA-KYIV-777"
+                  placeholder="Введіть код, наприклад: UA-KYIV-777 або UA-FRONT-1"
                   maxLength={20}
                   className="bg-slate-900 border border-slate-700 focus:border-cyan-400 rounded-xl px-4 py-3 text-sm font-mono font-bold text-white outline-none uppercase"
                 />
@@ -413,7 +521,7 @@ export function MultiplayerModal({
               <button
                 onClick={handleJoinRoom}
                 disabled={isConnecting || !joinCodeInput.trim()}
-                className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-sm rounded-xl shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-sm rounded-xl shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
               >
                 <LogIn size={18} />
                 <span>{isConnecting ? 'ПІДКЛЮЧЕННЯ...' : 'ПРИЄДНАТИСЯ ДО СЕРВЕРА'}</span>
@@ -440,8 +548,10 @@ export function MultiplayerModal({
                       <span>{multiplayerManager.nickname}</span>
                       <span className="text-[10px] text-cyan-400 font-mono">(Ви)</span>
                     </div>
-                    <div className="text-[10px] text-slate-400 font-mono">
-                      {isArmy ? '🪖 ЗСУ' : isPolice ? '👮 Поліція' : '👤 Цивільний'}
+                    <div className="text-[10px] text-slate-400 font-mono flex items-center gap-1.5 mt-0.5">
+                      <span>{isArmy ? '🪖 ЗСУ' : isPolice ? '👮 Поліція' : isDps ? '🚨 ДПС' : '👤 Цивільний'}</span>
+                      <span className="text-slate-600">•</span>
+                      <span className="text-cyan-300 font-bold">{formatCityName(selectedCity)}</span>
                     </div>
                   </div>
                 </div>
@@ -456,18 +566,26 @@ export function MultiplayerModal({
                 >
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-lg bg-slate-800 text-slate-300 flex items-center justify-center font-bold">
-                      {p.role === 'army' ? '🪖' : p.role === 'police' ? '👮' : '🚗'}
+                      {p.role === 'army' ? '🪖' : p.role === 'police' ? '👮' : p.isDps ? '🚨' : '🚗'}
                     </div>
                     <div>
                       <div className="text-xs font-black text-white">{p.nickname}</div>
-                      <div className="text-[10px] text-slate-400 font-mono">
-                        {p.isHumanOnFoot
-                          ? '🚶 Пішки'
-                          : p.isDrivingTank
-                          ? '🛡️ Танк Т-64БВ'
-                          : p.isDrivingMilitaryCar
-                          ? '🚛 Козак-2М'
-                          : '🚗 За кермом'}
+                      <div className="text-[10px] text-slate-400 font-mono flex items-center gap-1.5 mt-0.5">
+                        <span>
+                          {p.isHumanOnFoot
+                            ? '🚶 Пішки'
+                            : p.isDrivingTank
+                            ? '🛡️ Танк Т-64БВ'
+                            : p.isDrivingMilitaryCar
+                            ? '🚛 Козак-2М'
+                            : p.isDrivingPoliceCar
+                            ? '🚓 Патруль 102'
+                            : p.isDrivingDpsCar
+                            ? '🚨 Авто ДПС'
+                            : '🚗 За кермом'}
+                        </span>
+                        <span className="text-slate-600">•</span>
+                        <span className="text-amber-300 font-bold">{formatCityName(p.city || selectedCity)}</span>
                       </div>
                     </div>
                   </div>

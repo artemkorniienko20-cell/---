@@ -14,12 +14,22 @@ export function ScoreboardOverlay({
 }) {
   if (!isOpen) return null;
 
-  const cityName =
-    selectedCity === 'kyiv' ? 'Київ 🏛️' : selectedCity === 'zaporizhzhia' ? 'Запоріжжя ⚡' : 'Вінниця 🏙️';
+  const formatCityName = (c) => {
+    switch (c) {
+      case 'kyiv': return 'Київ 🏛️';
+      case 'vinnytsia': return 'Вінниця 🏙️';
+      case 'zaporizhzhia': return 'Запоріжжя ⚡';
+      case 'frontline': return 'Фронт (ЗСУ) 🪖';
+      case 'moscow': return 'Москва 🇷🇺';
+      default: return 'Київ 🏛️';
+    }
+  };
+
+  const cityName = formatCityName(selectedCity);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-in fade-in select-none pointer-events-none">
-      <div className="w-full max-w-3xl bg-slate-950/95 border-2 border-cyan-500/60 rounded-3xl shadow-[0_0_60px_rgba(6,182,212,0.5)] overflow-hidden flex flex-col pointer-events-auto">
+      <div className="w-full max-w-4xl bg-slate-950/95 border-2 border-cyan-500/60 rounded-3xl shadow-[0_0_60px_rgba(6,182,212,0.5)] overflow-hidden flex flex-col pointer-events-auto">
         {/* Header */}
         <div className="p-4 bg-gradient-to-r from-slate-900 via-cyan-950/50 to-slate-900 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -35,7 +45,7 @@ export function ScoreboardOverlay({
                   {multiplayerManager?.roomCode ? `Кімната: «${multiplayerManager.roomCode}»` : 'Локальна сесія'}
                 </span>
               </div>
-              <span className="text-xs text-slate-400 font-mono">Локація: {cityName} • Захист неба та порядок у місті</span>
+              <span className="text-xs text-slate-400 font-mono">Поточна локація: {cityName} • Спільна онлайн гра на всіх картах</span>
             </div>
           </div>
 
@@ -51,6 +61,7 @@ export function ScoreboardOverlay({
             <thead>
               <tr className="border-b border-slate-800 text-slate-400 uppercase text-[10px]">
                 <th className="py-2.5 px-3">Гравець</th>
+                <th className="py-2.5 px-3">Локація / Місто</th>
                 <th className="py-2.5 px-3">Служба / Роль</th>
                 <th className="py-2.5 px-3">Транспорт</th>
                 <th className="py-2.5 px-3 text-center">Збито БПЛА</th>
@@ -71,16 +82,23 @@ export function ScoreboardOverlay({
                   </div>
                 </td>
                 <td className="py-3 px-3">
+                  <span className="bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 px-2 py-0.5 rounded text-[10px] font-bold">
+                    {formatCityName(selectedCity)}
+                  </span>
+                </td>
+                <td className="py-3 px-3">
                   <span
                     className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                       selfRole === 'army'
                         ? 'bg-emerald-950 text-yellow-300 border border-yellow-500/40'
                         : selfRole === 'police'
                         ? 'bg-blue-950 text-cyan-300 border border-blue-500/40'
+                        : selfRole === 'dps'
+                        ? 'bg-indigo-950 text-cyan-300 border border-cyan-400/50'
                         : 'bg-slate-800 text-slate-300'
                     }`}
                   >
-                    {selfRole === 'army' ? '🪖 ЗСУ ППО' : selfRole === 'police' ? '👮 Поліція 102' : '👤 Цивільний'}
+                    {selfRole === 'army' ? '🪖 ЗСУ ППО' : selfRole === 'police' ? '👮 Поліція 102' : selfRole === 'dps' ? '🚨 ДПС' : '👤 Цивільний'}
                   </span>
                 </td>
                 <td className="py-3 px-3 text-slate-200 font-bold">{selfVehicle}</td>
@@ -99,6 +117,8 @@ export function ScoreboardOverlay({
                   ? '🚛 Козак-2М'
                   : p.isDrivingPoliceCar
                   ? '🚓 Патруль 102'
+                  : p.isDrivingDpsCar
+                  ? '🚨 Авто ДПС'
                   : p.carConfig?.modelId
                   ? `🚗 ${p.carConfig.modelId.toUpperCase()}`
                   : '🚗 Автомобіль';
@@ -112,16 +132,23 @@ export function ScoreboardOverlay({
                       </div>
                     </td>
                     <td className="py-3 px-3">
+                      <span className="bg-slate-900 border border-slate-700 text-amber-300 px-2 py-0.5 rounded text-[10px] font-bold">
+                        {formatCityName(p.city || selectedCity)}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3">
                       <span
                         className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                           p.role === 'army'
                             ? 'bg-emerald-950 text-yellow-300 border border-yellow-500/40'
                             : p.role === 'police'
                             ? 'bg-blue-950 text-cyan-300 border border-blue-500/40'
+                            : p.role === 'dps'
+                            ? 'bg-indigo-950 text-cyan-300 border border-cyan-400/50'
                             : 'bg-slate-800 text-slate-300'
                         }`}
                       >
-                        {p.role === 'army' ? '🪖 ЗСУ ППО' : p.role === 'police' ? '👮 Поліція 102' : '👤 Цивільний'}
+                        {p.role === 'army' ? '🪖 ЗСУ ППО' : p.role === 'police' ? '👮 Поліція 102' : p.role === 'dps' ? '🚨 ДПС' : '👤 Цивільний'}
                       </span>
                     </td>
                     <td className="py-3 px-3 text-slate-300">{pVehicle}</td>
